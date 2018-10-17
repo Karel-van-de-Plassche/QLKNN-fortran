@@ -21,7 +21,7 @@ Cf2py depend(n) a
             A(I) = A(I-1) + A(I-2)
          ENDIF
       ENDDO
-       open(10,file='nml')
+       open(10,file='efitem_gb_div_efetem_gb.nml')
        read(10,nml=smth)
        write(*,nml=smth)
        read(10,nml=smht)
