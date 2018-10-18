@@ -1,17 +1,24 @@
-C FILE: FIB3.F
+! FILE: FIB3.F
       SUBROUTINE FIB(A,N)
-C
-C     CALCULATE FIRST N FIBONACCI NUMBERS
-C
+!
+!     CALCULATE FIRST N FIBONACCI NUMBERS
+!
       INTEGER N
       REAL*8 A(N)
       CHARACTER(len=4), dimension(3) :: hidden_activation
-      CHARACTER(len=30) :: target_names
-      namelist /smth/ hidden_activation
-      namelist /smht/ target_names
-Cf2py intent(in) n
-Cf2py intent(out) a
-Cf2py depend(n) a
+      REAL, DIMENSION(:,:), allocatable :: weights_input
+      REAL, DIMENSION(128,128) :: biases_input
+      REAL, DIMENSION(3,128,128) :: weights_hidden
+      REAL, DIMENSION(128,128) :: biases_hidden
+      REAL, DIMENSION(128,128) :: weights_output
+      REAL, DIMENSION(128,128) :: biases_output
+      namelist /net/ hidden_activation, weights_input, biases_input, &
+          weights_hidden, biases_hidden, weights_output, biases_output
+
+!f2py intent(in) n
+!f2py intent(out) a
+!f2py depend(n) a
+
       DO I=1,N
          IF (I.EQ.1) THEN
             A(I) = 0.0D0
@@ -22,13 +29,11 @@ Cf2py depend(n) a
          ENDIF
       ENDDO
        open(10,file='efitem_gb_div_efetem_gb.nml')
-       read(10,nml=smth)
-       write(*,nml=smth)
-       read(10,nml=smht)
-       write(*,nml=smht)
+       read(10,nml=net)
+       write(*,nml=net)
        write(*, *) hidden_activation(1)
 
        close(10)
        end
       END
-C END FILE FIB3.F
+! END FILE FIB3.F

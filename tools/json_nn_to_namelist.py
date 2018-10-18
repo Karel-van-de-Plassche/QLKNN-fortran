@@ -1,6 +1,7 @@
 import json
 import f90nml
 from IPython import embed
+import numpy as np
 
 qlknn_9D_feature_names = [
         "Zeff",
@@ -29,8 +30,26 @@ def nn_dict_to_namelist(nn_dict):
         raise ValueError('Only single-output NNs supported')
 
     nn_dict.pop('_metadata')
+    n_layers = int(len([key for key in nn_dict if key.startswith('layer')])/2)
+    nml_dict = {}
+    for layer_type, i_layers in zip(['input', 'hidden', 'output'],
+                                   [[1], list(range(2, n_layers)), [n_layers]]):
+        for wb in ['weights', 'biases']:
+            layerlist = []
+            for i_layer in i_layers:
+               layerlist.append(nn_dict.pop(''.join(['layer', str(i_layer), '/', wb, '/Variable:0'])))
+            if len(layerlist) > 1:
+                nml_dict[wb + '_' + layer_type] = np.stack(layerlist, axis=-1).tolist()
+            else:
+                nml_dict[wb + '_' + layer_type] = layerlist[0]
 
-    nml = f90nml.namelist.Namelist({target_names[0]: nn_dict})
+    for fb in ['factor', 'bias']:
+        for tf, var in zip(['target', 'feature'],
+                           [target_names, feature_names]):
+            pass
+
+    nml_dict['hidden_activation'] = nn_dict.pop('hidden_activation')
+    nml = f90nml.namelist.Namelist({target_names[0]: nml_dict})
 
     return nml
 
