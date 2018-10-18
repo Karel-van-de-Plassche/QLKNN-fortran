@@ -28,6 +28,7 @@ def nn_dict_to_namelist(nn_dict):
     target_names = nn_dict.pop('target_names')
     if len(target_names) != 1:
         raise ValueError('Only single-output NNs supported')
+    name = target_names[0]
 
     nn_dict.pop('_metadata')
     n_layers = int(len([key for key in nn_dict if key.startswith('layer')])/2)
@@ -43,17 +44,26 @@ def nn_dict_to_namelist(nn_dict):
             else:
                 nml_dict[wb + '_' + layer_type] = layerlist[0]
 
+    sizes = {'n_hidden_layers': n_layers - 1,
+             'n_hidden_nodes': len(nml_dict['weights_input'][0]),
+             'n_inputs': len(nml_dict['weights_input']),
+             'n_outputs': len(nml_dict['weights_output'][0]),
+             }
+
     for fb in ['factor', 'bias']:
-        for tf, var in zip(['target', 'feature'],
+        for tf, vars in zip(['target', 'feature'],
                            [target_names, feature_names]):
-            pass
+            lst = [nn_dict['prescale_' + fb][var] for var in vars]
+            nml_dict[tf + '_prescale_' + fb] = lst
 
     nml_dict['hidden_activation'] = nn_dict.pop('hidden_activation')
-    nml = f90nml.namelist.Namelist({target_names[0]: nml_dict})
+    nml = f90nml.namelist.Namelist()
+    nml['sizes'] = sizes
+    nml['net'] = f90nml.namelist.Namelist(nml_dict)
 
-    return nml
+    return name, nml
 
 
 if __name__ == '__main__':
-    nml = nn_json_to_namelist('./test_nn.json')
-    nml.write('../src/' + list(nml.keys())[0] + '.nml', force=True)
+    name, nml = nn_json_to_namelist('./test_nn.json')
+    nml.write('../src/' + name + '.nml', force=True)
