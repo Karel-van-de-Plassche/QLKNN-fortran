@@ -1,7 +1,7 @@
-program qlk_test
+program qlknn_test
     use nn_primitives
     implicit none
     print *, "Hello World!"
     call fib()
 
-end program qlk_test
+end program qlknn_test

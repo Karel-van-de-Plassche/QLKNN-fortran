@@ -1,5 +1,6 @@
 ! file: fib3.f
-module nn_primitives
+module qlknn_primitives
+    use qlknn_disk_io
     implicit none
 contains
     subroutine fib()
@@ -47,6 +48,7 @@ contains
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
 
+        call load_net('efiITG_GB.nml')
         open(10,file='efiITG_GB.nml')
         read(10,nml=sizes)
         write(*, *) 'n_hidden_layers', n_hidden_layers
@@ -77,40 +79,40 @@ contains
 
 
 
-        allocate(res(n_inputs, n_hidden_nodes))
+        !allocate(res(n_inputs, n_hidden_nodes))
 
-        write(*,*) 'net inp'
-        write(*,*) inp(1,:)
-        do i = 1, 3
-        inp(i,:) = feature_prescale_factor * inp(i,:) + &
-            feature_prescale_bias
-        end do
+        !write(*,*) 'net inp'
+        !write(*,*) inp(1,:)
+        !do i = 1, 3
+        !inp(i,:) = feature_prescale_factor * inp(i,:) + &
+        !    feature_prescale_bias
+        !end do
 
-        res = matmul(inp, transpose(weights_input))
-        do i = 1, 3
-        res(i, :) = res(i, :) + biases_input
-        end do
-        res = tanh(res)
+        !res = matmul(inp, transpose(weights_input))
+        !do i = 1, 3
+        !res(i, :) = res(i, :) + biases_input
+        !end do
+        !res = tanh(res)
 
-        do lay = 1, n_hidden_layers - 1
-        res = matmul(res, transpose(weights_hidden(lay, :, :)))
-        do i = 1, 3
-        res(i, :) = res(i, :) + biases_hidden(lay, :)
-        end do
-        res = tanh(res)
-        end do
+        !do lay = 1, n_hidden_layers - 1
+        !res = matmul(res, transpose(weights_hidden(lay, :, :)))
+        !do i = 1, 3
+        !res(i, :) = res(i, :) + biases_hidden(lay, :)
+        !end do
+        !res = tanh(res)
+        !end do
 
-        res = matmul(res, transpose(weights_output))
-        do i = 1, 3
-            res(i, :) = res(i, :) + biases_output
-        end do
+        !res = matmul(res, transpose(weights_output))
+        !do i = 1, 3
+        !    res(i, :) = res(i, :) + biases_output
+        !end do
 
-        do i = 1, 3
-        res(i,:) = dot_product(1/target_prescale_factor, res(i,:) - &
-            target_prescale_bias)
-        end do
-        write(*,*) 'net out'
-        write(*,*) res
+        !do i = 1, 3
+        !res(i,:) = dot_product(1/target_prescale_factor, res(i,:) - &
+        !    target_prescale_bias)
+        !end do
+        !write(*,*) 'net out'
+        !write(*,*) res
 
     end subroutine fib
-end module nn_primitives
+end module qlknn_primitives
