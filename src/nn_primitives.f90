@@ -1,5 +1,5 @@
 ! file: fib3.f
-module qlknn
+module nn_primitives
     implicit none
 contains
     subroutine fib()
@@ -21,20 +21,25 @@ contains
         real, dimension(:,:), allocatable ::   res
         namelist /sizes/ n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs
         type networktype
-            character(len=4), dimension(3) :: hidden_activation
-            real, dimension(:,:), allocatable :: weights_input
-            real, dimension(:), allocatable :: biases_input
+            real, dimension(:,:), allocatable ::   weights_input
+            real, dimension(:), allocatable ::     biases_input
             real, dimension(:,:,:), allocatable :: weights_hidden
-            real, dimension(:,:), allocatable :: biases_hidden
-            real, dimension(:,:), allocatable :: weights_output
+            real, dimension(:,:), allocatable ::   biases_hidden
+            real, dimension(:,:), allocatable ::   weights_output
+
+            real, dimension(:), allocatable ::   feature_prescale_bias
+            real, dimension(:), allocatable ::   feature_prescale_factor
+            real, dimension(:), allocatable ::   target_prescale_bias
+            real, dimension(:), allocatable ::   target_prescale_factor
             real :: biases_output
         end type networktype
 
-        namelist /net/ biases_hidden, hidden_activation, weights_input, biases_input, &
+        namelist /netfile/ biases_hidden, hidden_activation, weights_input, biases_input, &
             weights_hidden, weights_output, biases_output, &
             feature_prescale_bias, feature_prescale_factor, target_prescale_bias,&
             target_prescale_factor
         real, dimension(3, 9) :: inp
+        type(networktype) net
         inp(1,:) = (/ 1.,2.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(2,:) = (/ 1.,13.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(3,:) = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0 /)
@@ -42,7 +47,7 @@ contains
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
 
-        open(10,file='efiitg_gb.nml')
+        open(10,file='efiITG_GB.nml')
         read(10,nml=sizes)
         write(*, *) 'n_hidden_layers', n_hidden_layers
         write(*, *) 'n_hidden_nodes', n_hidden_nodes
@@ -57,9 +62,21 @@ contains
         allocate(feature_prescale_factor(n_inputs))
         allocate(target_prescale_bias(n_outputs))
         allocate(target_prescale_factor(n_outputs))
-        read(10,nml=net)
+        read(10,nml=netfile)
         close(10)
         !write(*,nml=net)
+        net%weights_input = weights_input
+        net%biases_input = biases_input
+        net%biases_hidden = biases_hidden
+        net%weights_hidden = weights_hidden
+        net%weights_output = weights_output
+        net%target_prescale_bias = target_prescale_bias
+        net%target_prescale_factor = target_prescale_factor
+        net%feature_prescale_bias = feature_prescale_bias
+        net%feature_prescale_factor = feature_prescale_factor
+
+
+
         allocate(res(n_inputs, n_hidden_nodes))
 
         write(*,*) 'net inp'
@@ -95,6 +112,5 @@ contains
         write(*,*) 'net out'
         write(*,*) res
 
-
     end subroutine fib
-end module qlknn
+end module nn_primitives
