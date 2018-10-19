@@ -26,6 +26,7 @@ $(LIBNAME): $(FOBJ)
 	@echo $(LIBNAME)
 	@echo $?
 	ar vr $(LIBNAME) $?
+	cp src/*.mod .
 
 test:
 	@echo Building test
