@@ -10,12 +10,15 @@ QLKNN_LIBSRC?=$(QLKNN)/lib/src
 
 #QLKNN_LIBS=$(FUKUSHIMA)
 
-QLKNN_SRCS=qlknn_primitives.f90 qlknn_disk_io.f90
+QLKNN_SRCS=qlknn_primitives.f90 qlknn_disk_io.f90 qlknn_types.f90
 QLKNN_OBJS=$(QLKNN_SRCS:%f90=%o)
 QLKNN_MODS=$(QLKNN_SRCS:%f90=%mod)
 
+all: qlknn_test
+
 # Qualikiz objects
-qlknn_primitives.mod: qlknn_disk_io.mod
+qlknn_primitives.o: qlknn_disk_io.mod qlknn_types.mod
+qlknn_disk_io.o: qlknn_types.mod
 
 ###############################################################################
 qlknn_test: qlknn_test.f90 $(QLKNN_OBJS)

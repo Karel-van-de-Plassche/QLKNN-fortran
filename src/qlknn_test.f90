@@ -1,5 +1,5 @@
 program qlknn_test
-    use nn_primitives
+    use qlknn_primitives
     implicit none
     print *, "Hello World!"
     call fib()
