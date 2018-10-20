@@ -6,7 +6,7 @@ module qlknn_types
         real, dimension(:,:,:), allocatable :: weights_hidden
         real, dimension(:,:), allocatable ::   biases_hidden
         real, dimension(:,:), allocatable ::   weights_output
-        real :: biases_output
+        real, dimension(:), allocatable :: biases_output
 
         character(len=4), dimension(:), allocatable :: hidden_activation
 
