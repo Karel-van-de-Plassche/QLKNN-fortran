@@ -1,0 +1,3 @@
+[submodule "lib/QLKNN-networks"]
+	path = lib/QLKNN-networks
+	url = git@git.ccfe.ac.uk:kplass/QLKNN-networks.git
