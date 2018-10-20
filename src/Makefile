@@ -54,7 +54,8 @@ QLKNN_NET_FILES = \
 	net_vtiitg_gb_div_vtiitg_gb_rot0.f90 \
 	net_vtitem_gb_div_vtitem_gb_rot0.f90 \
 	net_vciitg_gb_div_vciitg_gb_rot0.f90 \
-	net_vcitem_gb_div_vcitem_gb_rot0.f90 
+	net_vcitem_gb_div_vcitem_gb_rot0.f90 \
+	net_gam_leq_gb.f90
 QLKNN_NET_SRCS=$(QLKNN_NET_FILES:%=$(QLKNN_SRC)/%)
 QLKNN_NET_OBJS=$(QLKNN_NET_SRCS:%f90=%o)
 QLKNN_NET_MODS=$(QLKNN_NET_SRCS:%f90=%mod)
