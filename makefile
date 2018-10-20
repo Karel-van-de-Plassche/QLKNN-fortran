@@ -4,14 +4,18 @@
 ## --------------------------------------------------------
 include ./src/Makefile
 
-include ../../include.mk
+ifdef JSRCPATH
+	include ../../include.mk
+endif
 
 ## Set the local environment for ITCequ
 ## ------------------------------------
 %.mod %.o: %.f90
 	@echo wat
 
-include ../include.mk
+ifdef JSRCPATH
+	include ../include.mk
+endif
 
 %.mod %.o: %.f90
 	@echo wut
@@ -27,6 +31,10 @@ $(LIBNAME): $(FOBJ)
 	@echo $?
 	ar vr $(LIBNAME) $?
 	cp src/*.mod .
+
+networks:
+	cd tools && python -c "from json_nn_to_namelist import convert_all; convert_all('../lib/QLKNN-networks', target_dir='../src/')"
+
 
 test:
 	@echo Building test
