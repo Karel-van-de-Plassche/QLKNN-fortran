@@ -71,6 +71,8 @@ type_map = {
     '<U4': 'CHARACTER',
 }
 def array_to_string(varname, array, type='REAL'):
+    if varname.startswith('weights_'):
+        array = array.swapaxes(0,1)
     init_str = np.array2string(np.ravel(array, 'F'), separator=', ', threshold=1000000)
     init_str = init_str.replace('[', '(/').replace(']', '/)')
     init_str = init_str.replace('\n', ' &\n        ')
