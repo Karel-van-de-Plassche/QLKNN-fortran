@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# QuaLiKiz nets
+net_*.f90
+__pycache__
