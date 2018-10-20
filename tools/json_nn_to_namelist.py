@@ -73,11 +73,11 @@ type_map = {
 def array_to_string(varname, array, type='REAL'):
     init_str = np.array2string(np.ravel(array, 'F'), separator=', ', threshold=1000000)
     init_str = init_str.replace('[', '(/').replace(']', '/)')
-    init_str = init_str.replace('\n', ' &\n')
+    init_str = init_str.replace('\n', ' &\n        ')
     if len(array.shape) > 1:
         shape_str = str(array.shape)
         shape_str = shape_str.replace('(', '(/').replace(')', '/)')
-        init_str = ''.join(['RESHAPE (',init_str, ', ', shape_str, ')'])
+        init_str = ''.join([' '*8, 'RESHAPE (',init_str, ', ', shape_str, ')'])
         shape_str2 = str(array.shape)
         shape_str2 = shape_str2.replace('(', '').replace(')', '')
     else:
@@ -85,7 +85,7 @@ def array_to_string(varname, array, type='REAL'):
     init_str = type_map[str(array.dtype)] + ', DIMENSION(' + shape_str2 + '), PARAMETER :: ' + varname + ' = &\n' + init_str
     return init_str
 
-def nml_dict_to_source(name, nml_dict):
+def nml_dict_to_source(name, nml_dict, target_dir='../src'):
     init_strings = []
     declare_strings = []
     for key, val in nml_dict.items():
@@ -98,12 +98,57 @@ def nml_dict_to_source(name, nml_dict):
             embed()
             raise Exception
 
-    with open('../src/' + name.lower() + '.f90', 'w') as f:
-        f.write('module ' + name.lower() + '\n')
+    out_path = os.path.join(target_dir, 'net_' + name.lower() + '.f90')
+    print('Writing to', out_path)
+    with open(out_path, 'w') as f:
+        f.write(module_start.format(name.lower()))
         #f.writelines([el + '\n' for el in declare_strings])
         #f.write('\n')
-        f.writelines([el + '\n' for el in init_strings])
-        f.write('end module ' + name.lower())
+        f.writelines(['    ' + el + '\n' for el in init_strings])
+        f.write(module_end.format(name.lower()))
+module_start = \
+"""
+module net_{0!s}
+    use qlknn_types
+"""
+module_end = \
+"""
+contains
+    function {0!s}()
+        type(networktype) :: {0!s}
+        {0!s}%weights_input = weights_input
+        {0!s}%biases_input = biases_input
+        {0!s}%biases_hidden = biases_hidden
+        {0!s}%weights_hidden = weights_hidden
+        {0!s}%weights_output = weights_output
+        {0!s}%biases_output = biases_output
+
+        {0!s}%hidden_activation = hidden_activation
+
+        {0!s}%target_prescale_bias = target_prescale_bias
+        {0!s}%target_prescale_factor = target_prescale_factor
+        {0!s}%feature_prescale_bias = feature_prescale_bias
+        {0!s}%feature_prescale_factor = feature_prescale_factor
+    end function {0!s}
+end module net_{0!s}
+"""
+
+import os
+def convert_all(path, target_dir='../src'):
+    print(path)
+    print(os.listdir(path))
+    if os.path.isdir(path):
+        for file in os.listdir(path):
+            filepath = os.path.join(path, file)
+            if os.path.isfile(filepath) and file.endswith('.json'):
+                print('Converting', filepath)
+                name, nml_dict, sizes = nn_json_to_namelist_dict(filepath)
+                nml_dict_to_source(name, nml_dict, target_dir=target_dir)
+            else:
+                print('Skipping', file, 'not a network json')
+    else:
+        raise ValueError('Please supply a directory path')
+
 
 if __name__ == '__main__':
     name, nml_dict, sizes = nn_json_to_namelist_dict('./test_nn.json')
