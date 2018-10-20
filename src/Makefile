@@ -6,7 +6,9 @@ QLKNN_SRC:=$(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
 #mkfile_pathz=$(abspath $(lastword $(MAKEFILE_LIST)))
 #QLKNN_SRC= $(dir $(mkfile_pathz))
 ifndef JSRCPATH
-	include $(QLKNN_SRC)/Makefile.inc
+include $(QLKNN_SRC)/Makefile.inc
+else
+	MODULE_PATH_OPTION=-module
 endif
 # Directory for math routines
 QLKNN_LIBSRC?=$(QLKNN)/lib/src
@@ -72,6 +74,9 @@ $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 ###############################################################################
 qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
 	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) qlknn_test.f90 -o $@
+	@echo hi!
+	@echo $(JSRCPATH)
+	@echo $(MODULE_PATH_OPTION)
 	$(FC) $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $< -o $@
 	chmod +x $@
 
@@ -113,6 +118,6 @@ dump_variables:
 	@echo
 	@echo "QLKNN_NET_OBJS=$(QLKNN_NET_OBJS)"
 	@echo "QLKNN_NET_MODS=$(QLKNN_NET_MODS)"
-	@echo "QLKNN_OBJS=$(QLKNN_SRCS)"
+	@echo "QLKNN_SRCS=$(QLKNN_SRCS)"
 	@echo "QLKNN_OBJS=$(QLKNN_OBJS)"
 	@echo "QLKNN_MODS=$(QLKNN_MODS)"
