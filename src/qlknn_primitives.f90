@@ -2,7 +2,7 @@
 module qlknn_primitives
     use qlknn_disk_io
     use qlknn_types
-    use efiitg_gb
+    use net_efiitg_gb
     implicit none
 contains
     subroutine fib()
@@ -10,6 +10,7 @@ contains
 
         integer :: n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs
         type(networktype) :: net
+        type(networktype), dimension(19) :: nets
         real, dimension(:,:), allocatable ::   res
         real, dimension(9,3) :: inp
         inp(:,1) = (/ 1.,2.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
@@ -19,20 +20,8 @@ contains
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
 
-        !call load_net('efiITG_GB.nml', net)
-        net%weights_input = weights_input
-        net%biases_input = biases_input
-        net%biases_hidden = biases_hidden
-        net%weights_hidden = weights_hidden
-        net%weights_output = weights_output
-        net%biases_output = biases_output
-
-        net%hidden_activation = hidden_activation
-
-        net%target_prescale_bias = target_prescale_bias
-        net%target_prescale_factor = target_prescale_factor
-        net%feature_prescale_bias = feature_prescale_bias
-        net%feature_prescale_factor = feature_prescale_factor
+        net = efiitg_gb()
+        nets(1) = net
 
         write(*,*) 'biases:', net%biases_output
         n_hidden_layers = size(net%weights_hidden, 3) + 1
