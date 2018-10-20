@@ -73,7 +73,7 @@ type_map = {
 def array_to_string(varname, array, type='REAL'):
     if varname.startswith('weights_'):
         array = array.swapaxes(0,1)
-    init_str = np.array2string(np.ravel(array, 'F'), separator=', ', threshold=1000000)
+    init_str = np.array2string(np.ravel(array, 'F'), separator=', ')
     init_str = init_str.replace('[', '(/').replace(']', '/)')
     init_str = init_str.replace('\n', ' &\n        ')
     if len(array.shape) > 1:
@@ -88,6 +88,7 @@ def array_to_string(varname, array, type='REAL'):
     return init_str
 
 def nml_dict_to_source(name, nml_dict, target_dir='../src'):
+    np.set_printoptions(threshold=np.inf)
     init_strings = []
     declare_strings = []
     for key, val in nml_dict.items():
@@ -137,9 +138,9 @@ end module net_{0!s}
 
 import os
 def convert_all(path, target_dir='../src'):
-    print(path)
-    print(os.listdir(path))
     if os.path.isdir(path):
+        if len(os.listdir(path)) == 0:
+            raise Exception('Path empty!')
         for file in os.listdir(path):
             filepath = os.path.join(path, file)
             if os.path.isfile(filepath) and file.endswith('.json'):
