@@ -74,4 +74,84 @@ contains
         WRITE(*,*) 'rotdiv_tem'                  , opts%rotdiv_tem
         WRITE(*,*) 'rotdiv_itg'                  , opts%rotdiv_itg
     end subroutine print_qlknn_options
+
+    subroutine get_networks_to_evaluate(opts, evaluate)
+        type (qlknn_options), intent(in) :: opts
+        !opts%use_ion_diffusivity_networks = .false.
+        !opts%apply_victor_rule = .false.
+        !opts%use_etg = .true.
+        !opts%use_itg = .true.
+        !opts%use_tem = .true.
+        !opts%use_effective_diffusivity = .false.
+        !opts%calc_heat_transport = .true.
+        !opts%calc_part_transport = .true.
+        !opts%rotdiv_tem = .true.
+        !opts%rotdiv_itg = .true.
+        logical, dimension(38), intent(out) :: evaluate
+        evaluate(:) = .FALSE.
+        if (opts%use_etg) then
+            evaluate(1) = .TRUE.
+        end if
+        if (opts%use_itg) then
+            evaluate(2:4:2) = .TRUE.
+            if (opts%rotdiv_itg) then
+                ! Use efi net for efe to keep thresholds matched
+                evaluate(22) = .TRUE.
+            end if
+        end if
+        if (opts%use_tem) then
+            evaluate(3:5:2) = .TRUE.
+            if (opts%rotdiv_tem) then
+                ! Use efi net for efe to keep thresholds matched
+                evaluate(23) = .TRUE.
+            end if
+        end if
+
+        if (opts%use_effective_diffusivity) then
+            if (opts%use_itg) then
+                evaluate(6) = .TRUE.
+                if (opts%rotdiv_itg) then
+                    evaluate(24) = .TRUE.
+                end if
+            end if
+            if (opts%use_tem) then
+                evaluate(7) = .TRUE.
+                if (opts%rotdiv_tem) then
+                    evaluate(25) = .TRUE.
+                end if
+            end if
+        else
+            if (opts%use_ion_diffusivity_networks) then
+                if (opts%use_itg) then
+                    evaluate(14:18:2) = .TRUE.
+                    if (opts%rotdiv_itg) then
+                        evaluate(32:36:2) = .TRUE.
+                    end if
+                end if
+                if (opts%use_tem) then
+                    evaluate(15:19:2) = .TRUE.
+                    if (opts%rotdiv_tem) then
+                        evaluate(33:37:2) = .TRUE.
+                    end if
+                end if
+            else
+                if (opts%use_itg) then
+                    evaluate(8:12:2) = .TRUE.
+                    if (opts%rotdiv_itg) then
+                        evaluate(26:30:2) = .TRUE.
+                    end if
+                end if
+                if (opts%use_tem) then
+                    evaluate(9:13:2) = .TRUE.
+                    if (opts%rotdiv_tem) then
+                        evaluate(27:31:2) = .TRUE.
+                    end if
+                end if
+            end if
+        end if
+
+        if (opts%apply_victor_rule) then
+            evaluate(38) = .TRUE.
+        end if
+    end subroutine get_networks_to_evaluate
 end module qlknn_types

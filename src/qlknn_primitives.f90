@@ -53,6 +53,7 @@ contains
         real, dimension(:,:), allocatable ::   res
         real, dimension(9,3) :: inp
         type (qlknn_options) :: opts
+        logical, dimension(38) :: evaluate
         inp(:,1) = (/ 1.,2.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(:,2) = (/ 1.,13.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(:,3) = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0 /)
@@ -104,6 +105,8 @@ contains
         call cpu_time(start)
         CALL default_qlknn_options(opts)
         call print_qlknn_options(opts)
+        call get_networks_to_evaluate(opts, evaluate)
+        write(*,*) evaluate
 
         n_trails = 1000
         do trial = 1,n_trails
