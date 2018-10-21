@@ -41,7 +41,10 @@ module qlknn_primitives
     use net_vciitg_gb_div_vciitg_gb_rot0
     use net_vcitem_gb_div_vcitem_gb_rot0
     use net_gam_leq_gb
+
     implicit none
+    include "mkl_vml.f90"
+    include "mkl_blas.fi"
 contains
     subroutine fib()
         integer trial, n_trails
@@ -49,6 +52,7 @@ contains
         type(networktype), dimension(38) :: nets
         real, dimension(:,:), allocatable ::   res
         real, dimension(9,3) :: inp
+        type (qlknn_options) :: opts
         inp(:,1) = (/ 1.,2.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(:,2) = (/ 1.,13.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
         inp(:,3) = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0 /)
@@ -98,10 +102,12 @@ contains
         write(*,*) 'net inp'
         write(*,*) inp(1,:)
         call cpu_time(start)
+        CALL default_qlknn_options(opts)
+        call print_qlknn_options(opts)
 
-        n_trails = 100
+        n_trails = 1000
         do trial = 1,n_trails
-            CALL evaluate_network(inp, nets(4), res)
+            CALL evaluate_network_mkl(inp, nets(4), res)
         end do
         call cpu_time(finish)
         print '("Time = ",f6.3," milliseconds.")',1000*(finish-start)/n_trails
@@ -111,14 +117,16 @@ contains
 
     end subroutine fib
 
-    subroutine evaluate_network(input, net, output)
+    subroutine evaluate_network_mkl(input, net, output)
         real, dimension(:,:), intent(in) :: input
         type(networktype), intent(in) :: net
         real, dimension(:,:), allocatable, intent(out) ::   output
+        integer num
 
         integer rho, lay
         integer :: n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs, n_rho
         real, dimension(:,:), allocatable :: inp_resc
+        real, dimension(:,:), allocatable :: B_hidden, B_output
 
         n_hidden_layers = size(net%weights_hidden, 3) + 1
         n_hidden_nodes = size(net%weights_hidden, 2)
@@ -131,6 +139,74 @@ contains
         !write(*, *) 'n_outputs', n_outputs
         !write(*, *) 'n_rho', n_rho
         allocate(inp_resc(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
+        allocate(B_hidden(n_hidden_nodes, n_rho))
+        allocate(B_output(n_outputs, n_rho))
+
+        do rho = 1, n_rho
+            inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
+                net%feature_prescale_bias
+        end do
+
+        do rho = 1, n_rho
+            B_hidden(:, rho) = net%biases_input
+        end do
+        CALL dgemm('N', 'N', n_hidden_nodes, n_rho, n_inputs, 1., net%weights_input, n_hidden_nodes, inp_resc, n_inputs, 1., &
+        B_hidden, n_hidden_nodes)
+        output = B_hidden
+        CALL vdtanh(n_rho * n_hidden_nodes, output, output)
+
+        do lay = 1, n_hidden_layers - 1
+            do rho = 1, n_rho
+                B_hidden(:, rho) = net%biases_hidden(:, lay)
+            end do
+            CALL dgemm('N', 'N', n_hidden_nodes, n_rho, n_hidden_nodes, 1., net%weights_hidden(:, :, lay), n_hidden_nodes, output, &
+            n_hidden_nodes, 1., &
+            B_hidden, n_hidden_nodes)
+            output = B_hidden
+            CALL vdtanh(n_rho * n_hidden_nodes, output, output)
+        end do
+
+        do rho = 1, n_rho
+            B_output(:, rho) = net%biases_output
+        end do
+        CALL dgemm('N', 'N', n_outputs, n_rho, n_hidden_nodes, &
+            1., net%weights_output, n_outputs, &
+            output, n_hidden_nodes, &
+            1., B_output, n_outputs)
+        output = B_output
+
+        do rho = 1, n_rho
+            output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
+                net%target_prescale_bias)
+        end do
+        deallocate(inp_resc)
+        deallocate(B_hidden)
+        deallocate(B_output)
+    end subroutine evaluate_network_mkl
+
+    subroutine evaluate_network(input, net, output)
+        real, dimension(:,:), intent(in) :: input
+        type(networktype), intent(in) :: net
+        real, dimension(:,:), allocatable, intent(out) ::   output
+
+        integer rho, lay
+        integer :: n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs, n_rho
+        real, dimension(:,:), allocatable :: inp_resc
+        real, dimension(:,:), allocatable :: B_hidden, B_output
+
+        n_hidden_layers = size(net%weights_hidden, 3) + 1
+        n_hidden_nodes = size(net%weights_hidden, 2)
+        n_inputs = size(net%weights_input, 2)
+        n_outputs = size(net%weights_output, 1)
+        n_rho = size(input, 2)
+        !write(*, *) 'n_hidden_layers', n_hidden_layers
+        !write(*, *) 'n_hidden_nodes', n_hidden_nodes
+        !write(*, *) 'n_inputs', n_inputs
+        !write(*, *) 'n_outputs', n_outputs
+        !write(*, *) 'n_rho', n_rho
+        allocate(inp_resc(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
+        allocate(B_hidden(n_hidden_nodes, n_rho))
+        allocate(B_output(n_outputs, n_rho))
 
         do rho = 1, n_rho
             inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
@@ -139,26 +215,32 @@ contains
 
         output = matmul(net%weights_input, inp_resc)
         do rho = 1, n_rho
-            output(:,rho) = output(:,rho) + net%biases_input
+            B_hidden(:, rho) = net%biases_input
         end do
+        output = output + B_hidden
         output = tanh(output)
 
         do lay = 1, n_hidden_layers - 1
             output = matmul(net%weights_hidden(:, :, lay), output)
             do rho = 1, n_rho
-                output(:, rho) = output(:, rho) + net%biases_hidden(:, lay)
+                B_hidden(:, rho) = net%biases_hidden(:, lay)
             end do
+            output = output + B_hidden
             output = tanh(output)
         end do
 
         output = matmul(net%weights_output, output)
         do rho = 1, n_rho
-            output(:, rho) = output(:, rho) + net%biases_output
+            B_output(:, rho) = net%biases_output
         end do
+        output = output + B_output
 
         do rho = 1, n_rho
             output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
                 net%target_prescale_bias)
         end do
+        deallocate(inp_resc)
+        deallocate(B_hidden)
+        deallocate(B_output)
     end subroutine
 end module qlknn_primitives

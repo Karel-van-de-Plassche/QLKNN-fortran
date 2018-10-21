@@ -77,7 +77,7 @@ qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
 	@echo hi!
 	@echo $(JSRCPATH)
 	@echo $(MODULE_PATH_OPTION)
-	$(FC) $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $< -o $@
+	$(FC) $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
 	chmod +x $@
 
 #$(QLKNN_OBJS) :%.o:%.f90
@@ -94,7 +94,7 @@ $(QLKNN_NET_MODS):%.mod:%.o
 
 $(QLKNN_OBJS) :%.o:%.f90
 	@echo Make QLK object
-	$(FC) -c $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) -o $@
+	$(FC) -c $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL) -o $@
 $(QLKNN_NET_OBJS) :%.o:%.f90
 	$(FC) -c $(FFLAGS) $(OPENMP) $(EXTEND) $(IFLAGS) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) -o $@
 clean:
