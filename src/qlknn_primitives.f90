@@ -43,8 +43,10 @@ module qlknn_primitives
     use net_gam_leq_gb
 
     implicit none
+#ifdef USE_MKL
     include "mkl_vml.fi"
     include "mkl_blas.fi"
+#endif
 
     integer, dimension(8), parameter :: idx_ITG = (/2, 6, 8, 10, 12, 14, 16, 18/)
     integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
@@ -415,7 +417,6 @@ contains
         real, dimension(:,:), intent(inout):: net_result
         integer, intent(in) :: verbosity
         integer :: ii, idx, n_rho
-        ! Clip stable modes to 0, based on leading flux
         n_rho = size(net_result, 1)
         do ii = 1, size(idx_ITG,1)
             idx = idx_ITG(ii)
@@ -427,5 +428,24 @@ contains
         end do
     end subroutine multiply_div_networks
 
+#ifndef USE_MKL
+    subroutine vdmul(n, a, b, y)
+        integer, intent(in) :: n
+        REAL, dimension(:), intent(in) :: a, b
+        REAL, dimension(:), intent(out) :: y
+    end subroutine vdmul
+    subroutine dgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+        character(len=1), intent(in) :: transa, transb
+        integer, intent(in) :: m, n, k, lda, ldb, ldc
+        REAL, intent(in) :: alpha, beta
+        REAL, dimension(:,:), intent(in) :: a, b
+        REAL, dimension(:,:), intent(inout) :: c
+    end subroutine
+    subroutine vdtanh(n, a, y)
+        integer, intent(in) :: n
+        REAL, dimension(:,:), intent(in) :: a
+        REAL, dimension(:,:), intent(out) :: y
+    end subroutine
+#endif
 
 end module qlknn_primitives
