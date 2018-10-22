@@ -20,5 +20,5 @@ ifeq ($(USE_MKL),true)
 MKLROOT=/home/karel/intel/mkl
 INTEL_MKL_LINK=-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_gf_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl -fdefault-integer-8
 INTEL_MKL=-I${MKLROOT}/include -I${MKLROOT}/include/intel64/ilp64
-endif
 FFLAGS_GFORTRAN += -DUSE_MKL
+endif
