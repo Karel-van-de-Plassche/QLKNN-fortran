@@ -386,8 +386,10 @@ contains
         input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
         input_clipped = input
         do rho = 1, n_rho
-            where (input_clipped(:, rho) < input_min) input_clipped(:, rho) = input_min
-            where (input_clipped(:, rho) > input_max) input_clipped(:, rho) = input_max
+            where ((input_clipped(:, rho) < input_min) .AND. opts%constrain_inputs) &
+                    input_clipped(:, rho) = input_min
+            where ((input_clipped(:, rho) > input_max) .AND. opts%constrain_inputs) &
+                    input_clipped(:, rho) = input_max
         end do
 
         if (verbosity >= 1) then
