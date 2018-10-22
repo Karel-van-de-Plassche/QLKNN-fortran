@@ -46,21 +46,23 @@ module qlknn_primitives
     include "mkl_vml.f90"
     include "mkl_blas.fi"
 contains
-    subroutine fib()
-        integer trial, n_trails
+    subroutine evaluate_QLKNN_10D(input)
+        real, dimension(:,:), intent(in) :: input
+
+        integer trial, n_trails, n_rho, ii, n_nets, n_rotdiv
         real :: start, finish
-        type(networktype), dimension(38) :: nets
-        real, dimension(:,:), allocatable ::   res
-        real, dimension(9,3) :: inp
+        type(networktype), dimension(38) :: nets, rotdiv_nets
+        real, dimension(:), allocatable :: res
+        real, dimension(:,:), allocatable :: net_result, rotdiv_result
+        real, dimension(:), allocatable :: gam_leq
+        real, dimension(:,:), allocatable :: net_input
+        real, dimension(:,:), allocatable ::rotdiv_input
         type (qlknn_options) :: opts
-        logical, dimension(38) :: evaluate
-        inp(:,1) = (/ 1.,2.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
-        inp(:,2) = (/ 1.,13.,5.,2.,0.66,0.4,0.45,1.,1e-3 /)
-        inp(:,3) = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0 /)
+        logical, dimension(20) :: net_evaluate
+        logical, dimension(19) :: rotdiv_evaluate
         !  ati  ate   an         q      smag         x  ti_te
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
-
         nets( 1) = efeetg_gb()
         nets( 2) = efeitg_gb_div_efiitg_gb()
         nets( 3) = efetem_gb()
@@ -80,37 +82,69 @@ contains
         nets(17) = vtitem_gb_div_efetem_gb()
         nets(18) = vciitg_gb_div_efiitg_gb()
         nets(19) = vcitem_gb_div_efetem_gb()
-        nets(20) = efeitg_gb_div_efeitg_gb_rot0()
-        nets(21) = efetem_gb_div_efetem_gb_rot0()
-        nets(22) = efiitg_gb_div_efiitg_gb_rot0()
-        nets(23) = efitem_gb_div_efitem_gb_rot0()
-        nets(24) = pfeitg_gb_div_pfeitg_gb_rot0()
-        nets(25) = pfetem_gb_div_pfetem_gb_rot0()
-        nets(26) = dfeitg_gb_div_dfeitg_gb_rot0()
-        nets(27) = dfetem_gb_div_dfetem_gb_rot0()
-        nets(28) = vteitg_gb_div_vteitg_gb_rot0()
-        nets(29) = vtetem_gb_div_vtetem_gb_rot0()
-        nets(30) = vceitg_gb_div_vceitg_gb_rot0()
-        nets(31) = vcetem_gb_div_vcetem_gb_rot0()
-        nets(32) = dfiitg_gb_div_dfiitg_gb_rot0()
-        nets(33) = dfitem_gb_div_dfitem_gb_rot0()
-        nets(34) = vtiitg_gb_div_vtiitg_gb_rot0()
-        nets(35) = vtitem_gb_div_vtitem_gb_rot0()
-        nets(36) = vciitg_gb_div_vciitg_gb_rot0()
-        nets(37) = vcitem_gb_div_vcitem_gb_rot0()
-        nets(38) = gam_leq_gb()
+        nets(20) = gam_leq_gb()
+        n_nets = 20
 
-        write(*,*) 'net inp'
-        write(*,*) inp(1,:)
+        rotdiv_nets(2) = efeitg_gb_div_efeitg_gb_rot0()
+        rotdiv_nets(3) = efetem_gb_div_efetem_gb_rot0()
+        rotdiv_nets(4) = efiitg_gb_div_efiitg_gb_rot0()
+        rotdiv_nets(5) = efitem_gb_div_efitem_gb_rot0()
+        rotdiv_nets(6) = pfeitg_gb_div_pfeitg_gb_rot0()
+        rotdiv_nets(7) = pfetem_gb_div_pfetem_gb_rot0()
+        rotdiv_nets(8) = dfeitg_gb_div_dfeitg_gb_rot0()
+        rotdiv_nets(9) = dfetem_gb_div_dfetem_gb_rot0()
+        rotdiv_nets(10) = vteitg_gb_div_vteitg_gb_rot0()
+        rotdiv_nets(11) = vtetem_gb_div_vtetem_gb_rot0()
+        rotdiv_nets(12) = vceitg_gb_div_vceitg_gb_rot0()
+        rotdiv_nets(13) = vcetem_gb_div_vcetem_gb_rot0()
+        rotdiv_nets(14) = dfiitg_gb_div_dfiitg_gb_rot0()
+        rotdiv_nets(15) = dfitem_gb_div_dfitem_gb_rot0()
+        rotdiv_nets(16) = vtiitg_gb_div_vtiitg_gb_rot0()
+        rotdiv_nets(17) = vtitem_gb_div_vtitem_gb_rot0()
+        rotdiv_nets(18) = vciitg_gb_div_vciitg_gb_rot0()
+        rotdiv_nets(19) = vcitem_gb_div_vcitem_gb_rot0()
+        n_rotdiv = 19
+
+        n_rho = size(input, 2)
+        allocate(net_input(9, n_rho))
+        allocate(net_result(n_rho, n_nets))
+        allocate(rotdiv_input(8, n_rho))
+        allocate(rotdiv_result(n_rho, n_rotdiv))
+
+        net_input = input(1:9, :)
+        rotdiv_input = input(1:8, :)
+
+        write(*,*) 'input'
+        write(*,*) input(:,1)
+        write(*,*) 'net_input'
+        write(*,*) net_input(:,1)
+        write(*,*) 'rotdiv_input'
+        write(*,*) rotdiv_input(:,1)
         call cpu_time(start)
         CALL default_qlknn_options(opts)
         call print_qlknn_options(opts)
-        call get_networks_to_evaluate(opts, evaluate)
-        write(*,*) evaluate
+        call get_networks_to_evaluate(opts, net_evaluate, rotdiv_evaluate)
+        net_result = 0.
+        !rotdiv_result = 0.
+        !gam_leq = 0.
+        write(*,*) net_evaluate, rotdiv_evaluate
+        do ii =1,n_nets
+            if (net_evaluate(ii)) then
+                call evaluate_network_mkl(net_input, nets(ii), net_result(:, ii))
+            end if
+        end do
+        !do ii =1,n_rotdiv
+        !    if (net_evaluate(ii)) then
+        !        call evaluate_network_mkl(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
+        !    end if
+        !end do
+        WRITE(*,'(AX,*(F7.2 X))') 'net_result'       , (net_result(1, ii), ii=1,n_nets)
+        WRITE(*,'(AX,*(F7.2 X))') 'rotdiv_result'       , (rotdiv_result(1, ii), ii=1,n_rotdiv)
 
         n_trails = 1000
+        allocate(res(n_rho))
         do trial = 1,n_trails
-            CALL evaluate_network_mkl(inp, nets(4), res)
+            CALL evaluate_network_mkl(net_input, nets(4), res)
         end do
         call cpu_time(finish)
         print '("Time = ",f6.3," milliseconds.")',1000*(finish-start)/n_trails
@@ -118,12 +152,13 @@ contains
         write(*,*) 'net out'
         write(*,*) res
 
-    end subroutine fib
+    end subroutine evaluate_QLKNN_10D
 
-    subroutine evaluate_network_mkl(input, net, output)
+    subroutine evaluate_network_mkl(input, net, output_1d)
         real, dimension(:,:), intent(in) :: input
         type(networktype), intent(in) :: net
-        real, dimension(:,:), allocatable, intent(out) ::   output
+        real, dimension(:,:), allocatable ::   output
+        real, dimension(:), intent(out) :: output_1d
         integer num
 
         integer rho, lay
@@ -136,6 +171,12 @@ contains
         n_inputs = size(net%weights_input, 2)
         n_outputs = size(net%weights_output, 1)
         n_rho = size(input, 2)
+        if (n_outputs > 1) then
+            ERROR STOP 'Expected 1D output from network!'
+        end if
+        if (.NOT. size(output_1d) == n_rho) then
+            ERROR STOP 'Passed output_1d has wrong shape!'
+        end if
         !write(*, *) 'n_hidden_layers', n_hidden_layers
         !write(*, *) 'n_hidden_nodes', n_hidden_nodes
         !write(*, *) 'n_inputs', n_inputs
@@ -182,6 +223,8 @@ contains
             output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
                 net%target_prescale_bias)
         end do
+
+        output_1d(:) = output(1, :)
         deallocate(inp_resc)
         deallocate(B_hidden)
         deallocate(B_output)
