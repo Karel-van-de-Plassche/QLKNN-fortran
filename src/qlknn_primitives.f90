@@ -46,12 +46,13 @@ module qlknn_primitives
     include "mkl_vml.fi"
     include "mkl_blas.fi"
 contains
-    subroutine evaluate_QLKNN_10D(input)
+    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, verbosity)
         real, dimension(:,:), intent(in) :: input
+        integer, intent(in) :: verbosity
+        type(networktype), dimension(20), intent(in) :: nets
+        type(networktype), dimension(19), intent(in) :: rotdiv_nets
 
-        integer trial, n_trails, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx
-        real :: start, finish
-        type(networktype), dimension(38) :: nets, rotdiv_nets
+        integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx
         real, dimension(:), allocatable :: res, x, y
         real, dimension(:,:), allocatable :: net_result, rotdiv_result
         real, dimension(:), allocatable :: gam_leq
@@ -63,49 +64,11 @@ contains
         integer, dimension(8), parameter :: idx_ITG = (/2, 6, 8, 10, 12, 14, 16, 18/)
         integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
         integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
+        real, dimension(10) :: input_min, input_max
         ! zeff ati  ate   an         q      smag         x  ti_te logNustar
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
-        nets( 1) = efeetg_gb()
-        nets( 2) = efeitg_gb_div_efiitg_gb()
-        nets( 3) = efetem_gb()
-        nets( 4) = efiitg_gb()
-        nets( 5) = efitem_gb_div_efetem_gb()
-        nets( 6) = pfeitg_gb_div_efiitg_gb()
-        nets( 7) = pfetem_gb_div_efetem_gb()
-        nets( 8) = dfeitg_gb_div_efiitg_gb()
-        nets( 9) = dfetem_gb_div_efetem_gb()
-        nets(10) = vteitg_gb_div_efiitg_gb()
-        nets(11) = vtetem_gb_div_efetem_gb()
-        nets(12) = vceitg_gb_div_efiitg_gb()
-        nets(13) = vcetem_gb_div_efetem_gb()
-        nets(14) = dfiitg_gb_div_efiitg_gb()
-        nets(15) = dfitem_gb_div_efetem_gb()
-        nets(16) = vtiitg_gb_div_efiitg_gb()
-        nets(17) = vtitem_gb_div_efetem_gb()
-        nets(18) = vciitg_gb_div_efiitg_gb()
-        nets(19) = vcitem_gb_div_efetem_gb()
-        nets(20) = gam_leq_gb()
         n_nets = 20
-
-        rotdiv_nets(2) = efeitg_gb_div_efeitg_gb_rot0()
-        rotdiv_nets(3) = efetem_gb_div_efetem_gb_rot0()
-        rotdiv_nets(4) = efiitg_gb_div_efiitg_gb_rot0()
-        rotdiv_nets(5) = efitem_gb_div_efitem_gb_rot0()
-        rotdiv_nets(6) = pfeitg_gb_div_pfeitg_gb_rot0()
-        rotdiv_nets(7) = pfetem_gb_div_pfetem_gb_rot0()
-        rotdiv_nets(8) = dfeitg_gb_div_dfeitg_gb_rot0()
-        rotdiv_nets(9) = dfetem_gb_div_dfetem_gb_rot0()
-        rotdiv_nets(10) = vteitg_gb_div_vteitg_gb_rot0()
-        rotdiv_nets(11) = vtetem_gb_div_vtetem_gb_rot0()
-        rotdiv_nets(12) = vceitg_gb_div_vceitg_gb_rot0()
-        rotdiv_nets(13) = vcetem_gb_div_vcetem_gb_rot0()
-        rotdiv_nets(14) = dfiitg_gb_div_dfiitg_gb_rot0()
-        rotdiv_nets(15) = dfitem_gb_div_dfitem_gb_rot0()
-        rotdiv_nets(16) = vtiitg_gb_div_vtiitg_gb_rot0()
-        rotdiv_nets(17) = vtitem_gb_div_vtitem_gb_rot0()
-        rotdiv_nets(18) = vciitg_gb_div_vciitg_gb_rot0()
-        rotdiv_nets(19) = vcitem_gb_div_vcitem_gb_rot0()
         n_rotdiv = 19
 
         n_rho = size(input, 2)
@@ -116,25 +79,33 @@ contains
 
         allocate(res(n_rho)) !Debug
 
+        if (verbosity >= 1) then
+            write(*,*) net_evaluate, rotdiv_evaluate
+        end if
+        ! Impose input constants
+        CALL default_qlknn_options(opts)
+        if (verbosity >= 1) then
+            call print_qlknn_options(opts)
+            write(*,*) 'input, n_rho=', n_rho
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (input(ii, rho), ii=1,10)
+            end do
+        end if
+
+        input_min = opts%min_input + (1-opts%margin) * abs(opts%min_input)
+        input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
         net_input = input(1:9, :)
         rotdiv_input = input((/3, 7, 5, 6, 2, 4, 8, 10/), :)
 
-        write(*,*) 'input, n_rho=', n_rho
-        do rho = 1, n_rho
-            WRITE(*,'(*(F7.2 X))'), (input(ii, rho), ii=1,10)
-        end do
-        write(*,*) 'net_input'
-        write(*,*) net_input(:,1)
-        write(*,*) 'rotdiv_input'
-        write(*,*) rotdiv_input(:,1)
-        call cpu_time(start)
-        CALL default_qlknn_options(opts)
-        call print_qlknn_options(opts)
+        if (verbosity >= 1) then
+            write(*,*) 'net_input'
+            write(*,*) net_input(:,1)
+            write(*,*) 'rotdiv_input'
+            write(*,*) rotdiv_input(:,1)
+        end if
         call get_networks_to_evaluate(opts, net_evaluate, rotdiv_evaluate)
         net_result = 0.
-
-        write(*,*) net_evaluate, rotdiv_evaluate
-        ! Impose input constants
+        rotdiv_result = 0.
 
         ! Evaluate all neural networks
         do ii =1,n_nets
@@ -149,9 +120,11 @@ contains
         end do
 
         ! Clip leading fluxes to 0
-        WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).lt.0
+        if (verbosity >= 1) then
+            WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).lt.0
+        end if
         WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).lt.0) &
-                net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)) = 0
+               net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)) = 0
 
         ! Clip stable modes to 0, based on leading flux
         do ii = 1, size(idx_ITG,1)
@@ -164,25 +137,19 @@ contains
         end do
 
 
-        WRITE(*,'(A)') 'net_result'
-        do rho = 1, n_rho
-            WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
-        end do
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'net_result'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
 
-        WRITE(*,'(A)') 'rotdiv_result'
-        do rho = 1, n_rho
-            WRITE(*,'(*(F7.2 X))'), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
-        end do
-
-        n_trails = 1
-        do trial = 1,n_trails
-            CALL evaluate_network_mkl(net_input, nets(1), res, 0)
-        end do
-        call cpu_time(finish)
-        print '("Time = ",f6.3," milliseconds.")',1000*(finish-start)/n_trails
-
-        write(*,*) 'net out'
-        write(*,*) res
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'rotdiv_result'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
+            end do
+        end if
 
     end subroutine evaluate_QLKNN_10D
 
@@ -345,4 +312,48 @@ contains
         deallocate(B_hidden)
         deallocate(B_output)
     end subroutine
+
+    subroutine load_nets(nets, rotdiv_nets)
+        type(networktype), dimension(20), intent(out) :: nets
+        type(networktype), dimension(19), intent(out) :: rotdiv_nets
+        nets( 1) = efeetg_gb()
+        nets( 2) = efeitg_gb_div_efiitg_gb()
+        nets( 3) = efetem_gb()
+        nets( 4) = efiitg_gb()
+        nets( 5) = efitem_gb_div_efetem_gb()
+        nets( 6) = pfeitg_gb_div_efiitg_gb()
+        nets( 7) = pfetem_gb_div_efetem_gb()
+        nets( 8) = dfeitg_gb_div_efiitg_gb()
+        nets( 9) = dfetem_gb_div_efetem_gb()
+        nets(10) = vteitg_gb_div_efiitg_gb()
+        nets(11) = vtetem_gb_div_efetem_gb()
+        nets(12) = vceitg_gb_div_efiitg_gb()
+        nets(13) = vcetem_gb_div_efetem_gb()
+        nets(14) = dfiitg_gb_div_efiitg_gb()
+        nets(15) = dfitem_gb_div_efetem_gb()
+        nets(16) = vtiitg_gb_div_efiitg_gb()
+        nets(17) = vtitem_gb_div_efetem_gb()
+        nets(18) = vciitg_gb_div_efiitg_gb()
+        nets(19) = vcitem_gb_div_efetem_gb()
+        nets(20) = gam_leq_gb()
+
+        rotdiv_nets(2) = efeitg_gb_div_efeitg_gb_rot0()
+        rotdiv_nets(3) = efetem_gb_div_efetem_gb_rot0()
+        rotdiv_nets(4) = efiitg_gb_div_efiitg_gb_rot0()
+        rotdiv_nets(5) = efitem_gb_div_efitem_gb_rot0()
+        rotdiv_nets(6) = pfeitg_gb_div_pfeitg_gb_rot0()
+        rotdiv_nets(7) = pfetem_gb_div_pfetem_gb_rot0()
+        rotdiv_nets(8) = dfeitg_gb_div_dfeitg_gb_rot0()
+        rotdiv_nets(9) = dfetem_gb_div_dfetem_gb_rot0()
+        rotdiv_nets(10) = vteitg_gb_div_vteitg_gb_rot0()
+        rotdiv_nets(11) = vtetem_gb_div_vtetem_gb_rot0()
+        rotdiv_nets(12) = vceitg_gb_div_vceitg_gb_rot0()
+        rotdiv_nets(13) = vcetem_gb_div_vcetem_gb_rot0()
+        rotdiv_nets(14) = dfiitg_gb_div_dfiitg_gb_rot0()
+        rotdiv_nets(15) = dfitem_gb_div_dfitem_gb_rot0()
+        rotdiv_nets(16) = vtiitg_gb_div_vtiitg_gb_rot0()
+        rotdiv_nets(17) = vtitem_gb_div_vtitem_gb_rot0()
+        rotdiv_nets(18) = vciitg_gb_div_vciitg_gb_rot0()
+        rotdiv_nets(19) = vcitem_gb_div_vcitem_gb_rot0()
+    end subroutine load_nets
 end module qlknn_primitives
