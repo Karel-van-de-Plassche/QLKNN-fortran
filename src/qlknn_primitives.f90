@@ -113,12 +113,12 @@ contains
         ! Evaluate all neural networks
         do ii =1,n_nets
             if (net_evaluate(ii)) then
-                call evaluate_network_mkl(net_input, nets(ii), net_result(:, ii))
+                call evaluate_network(net_input, nets(ii), net_result(:, ii))
             end if
         end do
         do ii =1,n_rotdiv
             if (rotdiv_evaluate(ii)) then
-                call evaluate_network_mkl(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
+                call evaluate_network(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
             end if
         end do
         ! Use the efi rotdiv for efe
@@ -169,7 +169,7 @@ contains
 
     end subroutine evaluate_QLKNN_10D
 
-    subroutine evaluate_network_mkl(input, net, output_1d, verbosityin)
+    subroutine evaluate_network(input, net, output_1d, verbosityin)
         real, dimension(:,:), intent(in) :: input
         type(networktype), intent(in) :: net
         integer, optional, intent(in) :: verbosityin
@@ -267,67 +267,7 @@ contains
         deallocate(inp_resc)
         deallocate(B_hidden)
         deallocate(B_output)
-    end subroutine evaluate_network_mkl
-
-    subroutine evaluate_network(input, net, output)
-        real, dimension(:,:), intent(in) :: input
-        type(networktype), intent(in) :: net
-        real, dimension(:,:), allocatable, intent(out) ::   output
-
-        integer rho, lay
-        integer :: n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs, n_rho
-        real, dimension(:,:), allocatable :: inp_resc
-        real, dimension(:,:), allocatable :: B_hidden, B_output
-
-        n_hidden_layers = size(net%weights_hidden, 3) + 1
-        n_hidden_nodes = size(net%weights_hidden, 2)
-        n_inputs = size(net%weights_input, 2)
-        n_outputs = size(net%weights_output, 1)
-        n_rho = size(input, 2)
-        !write(*, *) 'n_hidden_layers', n_hidden_layers
-        !write(*, *) 'n_hidden_nodes', n_hidden_nodes
-        !write(*, *) 'n_inputs', n_inputs
-        !write(*, *) 'n_outputs', n_outputs
-        !write(*, *) 'n_rho', n_rho
-        allocate(inp_resc(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
-        allocate(B_hidden(n_hidden_nodes, n_rho))
-        allocate(B_output(n_outputs, n_rho))
-
-        do rho = 1, n_rho
-            inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
-                net%feature_prescale_bias
-        end do
-
-        output = matmul(net%weights_input, inp_resc)
-        do rho = 1, n_rho
-            B_hidden(:, rho) = net%biases_input
-        end do
-        output = output + B_hidden
-        output = tanh(output)
-
-        do lay = 1, n_hidden_layers - 1
-            output = matmul(net%weights_hidden(:, :, lay), output)
-            do rho = 1, n_rho
-                B_hidden(:, rho) = net%biases_hidden(:, lay)
-            end do
-            output = output + B_hidden
-            output = tanh(output)
-        end do
-
-        output = matmul(net%weights_output, output)
-        do rho = 1, n_rho
-            B_output(:, rho) = net%biases_output
-        end do
-        output = output + B_output
-
-        do rho = 1, n_rho
-            output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
-                net%target_prescale_bias)
-        end do
-        deallocate(inp_resc)
-        deallocate(B_hidden)
-        deallocate(B_output)
-    end subroutine
+    end subroutine evaluate_network
 
     subroutine load_nets(nets, rotdiv_nets)
         type(networktype), dimension(20), intent(out) :: nets
@@ -433,18 +373,24 @@ contains
         integer, intent(in) :: n
         REAL, dimension(:), intent(in) :: a, b
         REAL, dimension(:), intent(out) :: y
+        integer :: ii
+        y = a * b
     end subroutine vdmul
+
     subroutine dgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
         character(len=1), intent(in) :: transa, transb
         integer, intent(in) :: m, n, k, lda, ldb, ldc
         REAL, intent(in) :: alpha, beta
         REAL, dimension(:,:), intent(in) :: a, b
         REAL, dimension(:,:), intent(inout) :: c
+        c = matmul(a, b) + c
     end subroutine
+
     subroutine vdtanh(n, a, y)
         integer, intent(in) :: n
         REAL, dimension(:,:), intent(in) :: a
         REAL, dimension(:,:), intent(out) :: y
+        y = tanh(a)
     end subroutine
 #endif
 
