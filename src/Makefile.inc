@@ -7,7 +7,8 @@ FC=gfortran
 FC_WRAPPER=mpifort
 # String of text that will be put in from of the $(FC) compile option
 FC_PREAMBLE=export OMPI_FC=$(FC) && 
-DEBUG=
+DEBUG=-g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
+
 FFLAGS_GFORTRAN=$(DEBUG) -O3 -fdefault-double-8 -fdefault-real-8 -ffree-line-length-none -flto -ffast-math -fwhole-program
 FFLAGS_IFORT=$(DEBUG) -O2 -real-size 64
 FFLAGS=$(FFLAGS_GFORTRAN)
