@@ -45,9 +45,14 @@ module qlknn_primitives
     implicit none
     include "mkl_vml.fi"
     include "mkl_blas.fi"
+
+    integer, dimension(8), parameter :: idx_ITG = (/2, 6, 8, 10, 12, 14, 16, 18/)
+    integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
+    integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
 contains
     subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, verbosity)
         real, dimension(:,:), intent(in) :: input
+        real, dimension(:,:), allocatable :: input_clipped
         integer, intent(in) :: verbosity
         type(networktype), dimension(20), intent(in) :: nets
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
@@ -58,14 +63,9 @@ contains
         real, dimension(:), allocatable :: gam_leq
         real, dimension(:,:), allocatable :: net_input
         real, dimension(:,:), allocatable ::rotdiv_input
-        real, dimension(:,:), allocatable :: input_clipped
         type (qlknn_options) :: opts
         logical, dimension(20) :: net_evaluate
         logical, dimension(19) :: rotdiv_evaluate
-        integer, dimension(8), parameter :: idx_ITG = (/2, 6, 8, 10, 12, 14, 16, 18/)
-        integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
-        integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
-        real, dimension(10) :: input_min, input_max
         ! zeff ati  ate   an         q      smag         x  ti_te logNustar
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
@@ -93,20 +93,7 @@ contains
         end if
 
         ! Impose input constants
-        input_min = opts%min_input + (1-opts%margin) * abs(opts%min_input)
-        input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
-        input_clipped = input
-        do rho = 1, n_rho
-            where (input_clipped(:, rho) < input_min) input_clipped(:, rho) = input_min
-            where (input_clipped(:, rho) > input_max) input_clipped(:, rho) = input_max
-        end do
-
-        if (verbosity >= 1) then
-            write(*,*) 'input clipped, n_rho=', n_rho
-            do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
-            end do
-        end if
+        call impose_input_constraints(input, input_clipped, opts, verbosity)
 
         net_input = input(1:9, :)
         rotdiv_input = input((/3, 7, 5, 6, 2, 4, 8, 10/), :)
@@ -132,27 +119,15 @@ contains
                 call evaluate_network_mkl(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
             end if
         end do
+        ! Use the efi rotdiv for efe
+        rotdiv_result(:, 1) = 1.
+        rotdiv_result(:, 2) = rotdiv_result(:, 4)
+        rotdiv_result(:, 3) = rotdiv_result(:, 5)
 
         ! Clip leading fluxes to 0
+        call impose_leading_flux_constraints(net_result, verbosity)
         if (verbosity >= 1) then
-            WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).lt.0
-        end if
-        WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).lt.0) &
-               net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)) = 0
-
-        ! Clip stable modes to 0, based on leading flux
-        do ii = 1, size(idx_ITG,1)
-            idx = idx_ITG(ii)
-            CALL vdmul(n_rho, net_result(:, idx), net_result(:, leading_ITG), net_result(:, idx))
-        end do
-        do ii = 1, size(idx_TEM,1)
-            idx = idx_TEM(ii)
-            CALL vdmul(n_rho, net_result(:, idx), net_result(:, leading_TEM), net_result(:, idx))
-        end do
-
-
-        if (verbosity >= 1) then
-            WRITE(*,'(A)') 'net_result'
+            WRITE(*,'(A)') 'net_result (pre-div-multiplicate)'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
             end do
@@ -164,6 +139,31 @@ contains
                 WRITE(*,'(*(F7.2 X))'), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
             end do
         end if
+
+        ! Clip leading rotdivs to 0
+        call impose_leading_flux_constraints(rotdiv_result, verbosity)
+
+        call multiply_div_networks(net_result, verbosity)
+
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'net_result'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
+
+        ! Multiply with rotdiv
+        do idx = 1, n_nets - 1
+            CALL vdmul(n_rho, net_result(:, idx), rotdiv_result(:, idx), net_result(:, idx))
+        end do
+
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'rotdiv multiplied net_result'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
+
 
     end subroutine evaluate_QLKNN_10D
 
@@ -370,4 +370,60 @@ contains
         rotdiv_nets(18) = vciitg_gb_div_vciitg_gb_rot0()
         rotdiv_nets(19) = vcitem_gb_div_vcitem_gb_rot0()
     end subroutine load_nets
+
+    subroutine impose_input_constraints(input, input_clipped, opts, verbosity)
+        real, dimension(:,:), intent(in) :: input
+        type (qlknn_options), intent(in) :: opts
+        integer, intent(in) :: verbosity
+        real, dimension(:,:), allocatable, intent(out) :: input_clipped
+
+        integer :: ii, rho, n_rho
+        real, dimension(10) :: input_min, input_max
+
+        n_rho = size(input, 2)
+
+        input_min = opts%min_input + (1-opts%margin) * abs(opts%min_input)
+        input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
+        input_clipped = input
+        do rho = 1, n_rho
+            where (input_clipped(:, rho) < input_min) input_clipped(:, rho) = input_min
+            where (input_clipped(:, rho) > input_max) input_clipped(:, rho) = input_max
+        end do
+
+        if (verbosity >= 1) then
+            write(*,*) 'input clipped, n_rho=', n_rho
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
+            end do
+        end if
+    end subroutine impose_input_constraints
+
+    subroutine impose_leading_flux_constraints(net_result, verbosity)
+        real, dimension(:,:), intent(inout):: net_result
+        integer, intent(in) :: verbosity
+        ! Clip leading fluxes to 0
+        if (verbosity >= 1) then
+            WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0
+        end if
+        WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0) &
+               net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)) = 0
+    end subroutine impose_leading_flux_constraints
+
+    subroutine multiply_div_networks(net_result, verbosity)
+        real, dimension(:,:), intent(inout):: net_result
+        integer, intent(in) :: verbosity
+        integer :: ii, idx, n_rho
+        ! Clip stable modes to 0, based on leading flux
+        n_rho = size(net_result, 1)
+        do ii = 1, size(idx_ITG,1)
+            idx = idx_ITG(ii)
+            CALL vdmul(n_rho, net_result(:, idx), net_result(:, leading_ITG), net_result(:, idx))
+        end do
+        do ii = 1, size(idx_TEM,1)
+            idx = idx_TEM(ii)
+            CALL vdmul(n_rho, net_result(:, idx), net_result(:, leading_TEM), net_result(:, idx))
+        end do
+    end subroutine multiply_div_networks
+
+
 end module qlknn_primitives
