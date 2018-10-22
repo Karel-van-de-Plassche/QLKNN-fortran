@@ -58,6 +58,7 @@ contains
         real, dimension(:), allocatable :: gam_leq
         real, dimension(:,:), allocatable :: net_input
         real, dimension(:,:), allocatable ::rotdiv_input
+        real, dimension(:,:), allocatable :: input_clipped
         type (qlknn_options) :: opts
         logical, dimension(20) :: net_evaluate
         logical, dimension(19) :: rotdiv_evaluate
@@ -82,7 +83,6 @@ contains
         if (verbosity >= 1) then
             write(*,*) net_evaluate, rotdiv_evaluate
         end if
-        ! Impose input constants
         CALL default_qlknn_options(opts)
         if (verbosity >= 1) then
             call print_qlknn_options(opts)
@@ -92,8 +92,22 @@ contains
             end do
         end if
 
+        ! Impose input constants
         input_min = opts%min_input + (1-opts%margin) * abs(opts%min_input)
         input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
+        input_clipped = input
+        do rho = 1, n_rho
+            where (input_clipped(:, rho) < input_min) input_clipped(:, rho) = input_min
+            where (input_clipped(:, rho) > input_max) input_clipped(:, rho) = input_max
+        end do
+
+        if (verbosity >= 1) then
+            write(*,*) 'input clipped, n_rho=', n_rho
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
+            end do
+        end if
+
         net_input = input(1:9, :)
         rotdiv_input = input((/3, 7, 5, 6, 2, 4, 8, 10/), :)
 
