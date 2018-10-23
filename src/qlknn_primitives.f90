@@ -61,7 +61,7 @@ contains
 
         integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx
         real, dimension(:), allocatable :: res, x, y
-        real, dimension(:,:), allocatable :: net_result, rotdiv_result
+        real, dimension(:,:), allocatable :: net_result, rotdiv_result, merged_net_result
         real, dimension(:), allocatable :: gam_leq
         real, dimension(:,:), allocatable :: net_input
         real, dimension(:,:), allocatable ::rotdiv_input
@@ -77,6 +77,7 @@ contains
         n_rho = size(input, 2)
         allocate(net_input(9, n_rho))
         allocate(net_result(n_rho, n_nets))
+        allocate(merged_net_result(n_rho, 9))
         allocate(rotdiv_input(8, n_rho))
         allocate(rotdiv_result(n_rho, n_rotdiv))
 
@@ -163,6 +164,24 @@ contains
             WRITE(*,'(A)') 'rotdiv multiplied net_result'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
+
+        ! Clip based on leading
+        call apply_stability_clipping(net_result, verbosity)
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'rotdiv stability clipped'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
+
+        ! Merge ETG/ITG/TEM modes together
+        call merge_modes(net_result, merged_net_result, verbosity)
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'rotdiv modes merged'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (merged_net_result(rho, ii), ii=1,7)
             end do
         end if
 
@@ -342,6 +361,28 @@ contains
         end if
     end subroutine impose_input_constraints
 
+    subroutine apply_stability_clipping(net_result, verbosity)
+        real, dimension(:,:), intent(inout):: net_result
+        integer, intent(in) :: verbosity
+        integer :: ii, idx
+        ! Clip leading fluxes to 0
+        if (verbosity >= 1) then
+            WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0
+        end if
+        WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0) &
+               net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)) = 0
+        do ii = 1, size(idx_ITG,1)
+            idx = idx_ITG(ii)
+            WHERE (net_result(:, leading_ITG).le.0) &
+                   net_result(:, idx) = 0
+        end do
+        do ii = 1, size(idx_TEM,1)
+            idx = idx_TEM(ii)
+            WHERE (net_result(:, leading_TEM).le.0) &
+                   net_result(:, idx) = 0
+        end do
+    end subroutine apply_stability_clipping
+
     subroutine impose_leading_flux_constraints(net_result, verbosity)
         real, dimension(:,:), intent(inout):: net_result
         integer, intent(in) :: verbosity
@@ -367,6 +408,31 @@ contains
             CALL vdmul(n_rho, net_result(:, idx), net_result(:, leading_TEM), net_result(:, idx))
         end do
     end subroutine multiply_div_networks
+
+    subroutine merge_modes(net_result, merged_net_result, verbosity)
+        real, dimension(:,:), intent(in):: net_result
+        integer, intent(in) :: verbosity
+        real, dimension(:,:), intent(out), allocatable :: merged_net_result
+        integer :: n_rho, ii
+        n_rho = size(net_result, 1)
+        !'efe_GB' % 1
+        !'efi_GB' % 2
+        !'pfe_GB' % 3
+        !'dfe_GB' % 4
+        !'vte_GB' % 5
+        !'dfi_GB' % 6
+        !'vti_GB' % 7
+        allocate(merged_net_result(n_rho, 7))
+        do ii = 1, n_rho
+            merged_net_result(ii, 1) = sum(net_result(ii, 1:3))
+            merged_net_result(ii, 2) = sum(net_result(ii, 4:5))
+            merged_net_result(ii, 3) = sum(net_result(ii, 6:7))
+            merged_net_result(ii, 4) = sum(net_result(ii, 8:9))
+            merged_net_result(ii, 5) = sum(net_result(ii, 10:13))
+            merged_net_result(ii, 6) = sum(net_result(ii, 14:15))
+            merged_net_result(ii, 7) = sum(net_result(ii, 16:19))
+        end do
+    end subroutine merge_modes
 
 #ifndef USE_MKL
     subroutine vdmul(n, a, b, y)
