@@ -11,8 +11,8 @@ DEBUG=-g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktr
 FFLAGS_GFORTRAN=$(DEBUG) -O3 -fdefault-double-8 -fdefault-real-8 -ffree-line-length-none -flto -ffast-math -fwhole-program -cpp -fdefault-integer-8 -m64
 FFLAGS_IFORT=$(DEBUG) -O2 -real-size 64
 FFLAGS=$(FFLAGS_GFORTRAN)
-OPENMP_FLAGS=-fopenmp
-MPI_FLAGS=-DMPI
+OPENMP=-fopenmp
+MPI=-DMPI
 MODULE_PATH_OPTION=-L
 
 

@@ -6,19 +6,19 @@
 
 ## Set the local environment for ITCequ
 ## ------------------------------------
+# Overwrite JETTO pattern rules. Keep the tab after the rule!
 %.mod %.o: %.f90
-	@echo wat
+	
 
 -include ../include.mk
 
 include ./src/Makefile
 
-
-%.mod %.o: %.f90
-	@echo wut
-
 FOBJ=$(QLKNN_OBJS)
-PYTHON3=python3
+PYTHON=python2
+QLKNN_LIB=$(QLKNNDIR)/lib
+QLKNN_NETWORK_DIR=$(QLKNN_LIB)/QLKNN-networks
+QLKNN_TOOLS_DIR=$(QLKNNDIR)/tools
 
 ## set PHONY targets
 ## -----------------
@@ -29,7 +29,8 @@ PYTHON3=python3
 #/home/kplass/jetto/libs/linux/jetto-karel_mpi_64/libtransport.a: $(FOBJ)
 #	@echo $(LIBNAME)
 
-$(LIBNAME) all: $(QLKNN_OBJS) networks
+all: $(LIBNAME)
+$(LIBNAME): $(QLKNN_MODS)
 
 #$(LIBNAME) $(QLKNNDIR)/src/qlknn_primitives.mod: $(FOBJ) $(QLKNNDIR)/src/qlknn_primitives.f90
 #	@echo $(LIBNAME)
@@ -37,9 +38,8 @@ $(LIBNAME) all: $(QLKNN_OBJS) networks
 #	@echo $(FOBJ)
 #	ar vr $(LIBNAME) $?
 
-networks $(QLKNN_NET_SRCS):
-	@echo $(PYTHON3)
-	cd tools && $(PYTHON3) -c "from json_nn_to_namelist import convert_all; convert_all('../lib/QLKNN-networks', target_dir='../src/')"
+networks $(QLKNN_NET_SRCS): $(QLKNN_NET_FILES:net_%.f90=$(abspath $(QLKNN_NETWORK_DIR))/%.json)
+	cd $(abspath $(QLKNN_TOOLS_DIR)) && $(PYTHON) -c "from json_nn_to_namelist import convert_all; convert_all('$(abspath $(QLKNN_NETWORK_DIR))', target_dir='$(QLKNN_SRC)')"
 
 
 test:
@@ -57,4 +57,8 @@ test:
 
 dump_top_variables:
 	@echo LIBNAME=$(LIBNAME)
+	@echo PYTHON=$(PYTHON)
+	@echo QLKNN_LIB=$(QLKNN_LIB)
 	@echo FOBJ=$(FOBJ)
+	@echo QLKNN_NET_SRCS=$(QLKNN_NET_SRCS)
+	@echo QLKNN_NET_JSON=$(QLKNN_NET_FILES:net_%.f90=$(abspath $(QLKNN_NETWORK_DIR))/%.json)

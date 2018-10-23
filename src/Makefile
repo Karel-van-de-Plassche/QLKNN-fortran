@@ -9,16 +9,16 @@ ifndef JSRCPATH
 include $(QLKNN_SRC)/Makefile.inc
 else
 	MODULE_PATH_OPTION=-module
-	FFLAGS+=-Mcpp
+	FFLAGS+=-Mpreprocess
 endif
 # Directory for math routines
-QLKNN_LIBSRC?=$(QLKNN)/lib/src
+QLKNN_LIBSRC?=$(QLKNNDIR)/lib/src
 #FUKUSHIMA_DIR?=$(QUALIKIZ_LIBSRC)/fukushima
 
 #FUKUSHIMA?=-L$(FUKUSHIMA_DIR) -lfukushima
 
 #QLKNN_LIBS=$(FUKUSHIMA)
-all: qlknn_test
+all: $(QLKNN_OBJS)
 
 QLKNN_NET_FILES = \
 	net_efeetg_gb.f90 \
@@ -76,10 +76,7 @@ $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 ###############################################################################
 qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
 	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) qlknn_test.f90 -o $@
-	@echo hi!
-	@echo $(JSRCPATH)
-	@echo $(MODULE_PATH_OPTION)
-	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(OPENMP) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
+	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(OPENMP) $(MPI) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
 	chmod +x $@
 
 #$(QLKNN_OBJS) :%.o:%.f90
@@ -87,16 +84,11 @@ qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
 	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QUALIKIZ_LIBS) -c $<
 
 
-%.mod %.o: %.f90
-	@echo blurgh
-$(QLKNN_MODS):%.mod:%.o
-	@echo balarg
-$(QLKNN_NET_MODS):%.mod:%.o
-	@echo balargukkel
+$(QLKNN_MODS) $(QLKNN_NET_MODS):%.mod:%.o
 
 $(QLKNN_OBJS) :%.o:%.f90
-	@echo Make QLK object
 	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $(OPENMP) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL) -o $@
+
 $(QLKNN_NET_OBJS) :%.o:%.f90
 	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $(OPENMP) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) -o $@
 
