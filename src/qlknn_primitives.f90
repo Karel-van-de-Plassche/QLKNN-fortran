@@ -79,7 +79,7 @@ contains
                 call evaluate_network(net_input, nets(ii), net_result(:, ii))
             end if
         end do
-        do ii =1,n_rotdiv
+        do ii =2,n_rotdiv
             if (rotdiv_evaluate(ii)) then
                 call evaluate_network(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
             end if
