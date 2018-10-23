@@ -63,13 +63,14 @@ QLKNN_NET_SRCS=$(QLKNN_NET_FILES:%=$(QLKNN_SRC)/%)
 QLKNN_NET_OBJS=$(QLKNN_NET_SRCS:%f90=%o)
 QLKNN_NET_MODS=$(QLKNN_NET_SRCS:%f90=%mod)
 
-QLKNN_FILES=qlknn_primitives.f90 qlknn_disk_io.f90 qlknn_types.f90
+QLKNN_FILES=qlknn_primitives.f90 qlknn_disk_io.f90 qlknn_types.f90 qlknn_all_nets.f90
 QLKNN_SRCS=$(QLKNN_FILES:%=$(QLKNN_SRC)/%)
 QLKNN_OBJS=$(QLKNN_SRCS:%f90=%o)
 QLKNN_MODS=$(QLKNN_SRCS:%f90=%mod)
 
 # Qualikiz objects
-$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlknn_types.mod $(QLKNN_NET_MODS)
+$(QLKNN_SRC)/qlknn_all_nets.o: $(QLKNN_NET_MODS)
+$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlknn_types.mod $(QLKNN_SRC)/qlknn_all_nets.mod
 $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 
 ###############################################################################
