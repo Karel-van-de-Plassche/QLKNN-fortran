@@ -29,7 +29,7 @@ PYTHON3=python3
 #/home/kplass/jetto/libs/linux/jetto-karel_mpi_64/libtransport.a: $(FOBJ)
 #	@echo $(LIBNAME)
 
-$(LIBNAME): $(QLKNN_OBJS)
+$(LIBNAME) all: $(QLKNN_OBJS) networks
 
 #$(LIBNAME) $(QLKNNDIR)/src/qlknn_primitives.mod: $(FOBJ) $(QLKNNDIR)/src/qlknn_primitives.f90
 #	@echo $(LIBNAME)
@@ -37,7 +37,7 @@ $(LIBNAME): $(QLKNN_OBJS)
 #	@echo $(FOBJ)
 #	ar vr $(LIBNAME) $?
 
-networks:
+networks $(QLKNN_NET_SRCS):
 	@echo $(PYTHON3)
 	cd tools && $(PYTHON3) -c "from json_nn_to_namelist import convert_all; convert_all('../lib/QLKNN-networks', target_dir='../src/')"
 
@@ -55,26 +55,6 @@ test:
 #$(MASTER_RULES):
 #	@($(MAKE) -C ../../ $@) || exit $$?
 
-# Rule for libtransport.a
-# -----------------------
-
-# make 'realclean' option
-# -----------------------
-realclean:
-	$(MAKE) -C src realclean
-
-# make 'clean' option
-# -------------------
-clean:
-	$(MAKE) -C src clean
-
-dump_more:
+dump_top_variables:
 	@echo LIBNAME=$(LIBNAME)
 	@echo FOBJ=$(FOBJ)
-
-#%.o %.mod: %.f90
-#	@echo hello?
-#	$(MAKE) -C $<
-#
-#%.o %.mod: %.f
-#	$(MAKE) -C $<

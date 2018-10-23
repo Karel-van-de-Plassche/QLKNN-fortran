@@ -1,11 +1,11 @@
 #!/bin/make -f
 QUALIKIZ=/home/karel/working/QLKNN-fortran
 # Underlying compiler
-FC=gfortran
+FC_COMPILER=gfortran
 # Wrapper/command used to compile with Open MPI
-FC_WRAPPER=mpifort
+FC=mpifort
 # String of text that will be put in from of the $(FC) compile option
-FC_PREAMBLE=export OMPI_FC=$(FC) && 
+FC_PREAMBLE=export OMPI_FC=$(FC_COMPILER) &&
 DEBUG=-g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -pg
 
 FFLAGS_GFORTRAN=$(DEBUG) -O3 -fdefault-double-8 -fdefault-real-8 -ffree-line-length-none -flto -ffast-math -fwhole-program -cpp -fdefault-integer-8 -m64
