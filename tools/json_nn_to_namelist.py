@@ -41,7 +41,11 @@ def nn_dict_to_namelist_dict(nn_dict):
             for i_layer in i_layers:
                layerlist.append(nn_dict.pop(''.join(['layer', str(i_layer), '/', wb, '/Variable:0'])))
             if len(layerlist) > 1:
-                nml_dict[wb + '_' + layer_type] = np.stack(layerlist, axis=-1).tolist()
+                try:
+                    layerlist[0][0][0]
+                    nml_dict[wb + '_' + layer_type] = np.dstack(layerlist).tolist()
+                except TypeError:
+                    nml_dict[wb + '_' + layer_type] = np.vstack(layerlist).T.tolist()
             else:
                 nml_dict[wb + '_' + layer_type] = layerlist[0]
 
