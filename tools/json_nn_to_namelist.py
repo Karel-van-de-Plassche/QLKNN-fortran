@@ -64,11 +64,11 @@ def nn_dict_to_namelist_dict(nn_dict):
     nml_dict['hidden_activation'] = nn_dict.pop('hidden_activation')
     return name, nml_dict, sizes
 
-def nml_dict_to_namelist(nml_dict, sizes):
+def nml_dict_to_namelist(name, nml_dict, sizes, target_dir='../src'):
     nml = f90nml.namelist.Namelist()
     nml['sizes'] = sizes
     nml['net'] = f90nml.namelist.Namelist(nml_dict)
-    return nml
+    nml.write(os.path.join(target_dir,  name + '.nml'), force=True)
 
 type_map = {
     'float64': 'REAL',
@@ -141,7 +141,7 @@ end module net_{0!s}
 """
 
 import os
-def convert_all(path, target_dir='../src'):
+def convert_all(path, target_dir='../src', target='namelist'):
     if os.path.isdir(path):
         if len(os.listdir(path)) == 0:
             raise Exception('Path empty!')
@@ -150,7 +150,12 @@ def convert_all(path, target_dir='../src'):
             if os.path.isfile(filepath) and file.endswith('.json'):
                 print('Converting', filepath)
                 name, nml_dict, sizes = nn_json_to_namelist_dict(filepath)
-                nml_dict_to_source(name, nml_dict, target_dir=target_dir)
+                if target == 'source':
+                    nml_dict_to_source(name, nml_dict, target_dir=target_dir)
+                elif target == 'namelist':
+                    nml_dict_to_namelist(name, nml_dict, sizes, target_dir=target_dir)
+                else:
+                    raise ValueError('Unknown target {!s}'.format(target))
             else:
                 print('Skipping', file, 'not a network json')
     else:
@@ -159,6 +164,5 @@ def convert_all(path, target_dir='../src'):
 
 if __name__ == '__main__':
     name, nml_dict, sizes = nn_json_to_namelist_dict('./test_nn.json')
-    src_str = nml_dict_to_source(name, nml_dict)
-    #nml = nml_dict_to_namelist(nml_dict, sizes)
-    #nml.write('../src/' + name + '.nml', force=True)
+    #src_str = nml_dict_to_source(name, nml_dict)
+    nml_dict_to_namelist(nml_dict, sizes)

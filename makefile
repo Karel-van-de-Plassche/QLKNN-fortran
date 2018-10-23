@@ -16,6 +16,7 @@ include ./src/Makefile
 
 FOBJ=$(QLKNN_OBJS)
 PYTHON=python2
+QLKNNDIR?=$(abspath .)
 QLKNN_LIB=$(QLKNNDIR)/lib
 QLKNN_NETWORK_DIR=$(QLKNN_LIB)/QLKNN-networks
 QLKNN_TOOLS_DIR=$(QLKNNDIR)/tools
@@ -39,7 +40,11 @@ $(LIBNAME): $(QLKNN_MODS)
 #	ar vr $(LIBNAME) $?
 
 networks $(QLKNN_NET_SRCS): $(QLKNN_NET_FILES:net_%.f90=$(abspath $(QLKNN_NETWORK_DIR))/%.json)
-	cd $(abspath $(QLKNN_TOOLS_DIR)) && $(PYTHON) -c "from json_nn_to_namelist import convert_all; convert_all('$(abspath $(QLKNN_NETWORK_DIR))', target_dir='$(QLKNN_SRC)')"
+	cd $(abspath $(QLKNN_TOOLS_DIR)) && $(PYTHON) -c "from json_nn_to_namelist import convert_all; convert_all('$(abspath $(QLKNN_NETWORK_DIR))', target_dir='$(QLKNN_SRC)', target='source')"
+
+network_namelists: $(QLKNN_NET_FILES:net_%.f90=$(abspath $(QLKNN_NETWORK_DIR))/%.json)
+	cd $(abspath $(QLKNN_TOOLS_DIR)) && $(PYTHON) -c "from json_nn_to_namelist import convert_all; convert_all('$(abspath $(QLKNN_NETWORK_DIR))', target_dir='$(QLKNN_SRC)', target='namelist')"
+
 
 
 test:
