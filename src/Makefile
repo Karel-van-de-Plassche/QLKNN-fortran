@@ -9,6 +9,7 @@ ifndef JSRCPATH
 include $(QLKNN_SRC)/Makefile.inc
 else
 	MODULE_PATH_OPTION=-module
+	FFLAGS+=-Mcpp
 endif
 # Directory for math routines
 QLKNN_LIBSRC?=$(QLKNN)/lib/src
