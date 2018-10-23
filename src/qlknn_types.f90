@@ -27,10 +27,9 @@ module qlknn_types
         logical :: use_TEM
         logical :: apply_stability_clipping
         logical, dimension(10) :: constrain_inputs
-        real, dimension(10) :: margin
-        real, dimension(10) :: min_input, max_input
-        logical, dimension(9) :: constrain_outputs
-        real, dimension(9) :: min_output, max_output
+        real, dimension(10) :: min_input, max_input, margin_input
+        logical, dimension(20) :: constrain_outputs
+        real, dimension(20) :: min_output, max_output, margin_output
         logical :: rotdiv_TEM
         logical :: rotdiv_ITG
     end type qlknn_options
@@ -50,10 +49,11 @@ contains
         opts%constrain_inputs = .true.
         opts%min_input = (/1., 0., 0., -5., 0.66, -1., .09, 0.25, -5., -100./)
         opts%max_input = (/3., 14., 14., 6., 15., 5., .99, 2.5, 0., 100./)
-        opts%margin = 0.95
+        opts%margin_input = 0.95
         opts%constrain_outputs = .true.
         opts%min_output = -100
         opts%max_output = 100
+        opts%margin_output = 1.
         opts%rotdiv_tem = .true.
         opts%rotdiv_itg = .true.
     end subroutine default_qlknn_options
@@ -72,12 +72,13 @@ contains
         WRITE(*,*) 'use_tem'                     , opts%use_tem
         WRITE(*,*) 'apply_stability_clipping'    , opts%apply_stability_clipping
         WRITE(*,*) 'constrain_inputs'            , opts%constrain_inputs
-        WRITE(*,'(AX,*(F8.3 X))') 'margin'       , (opts%margin(i), i=1,10)
         WRITE(*,'(AX,*(F8.3 X))') 'min_input'    , (opts%min_input(i), i=1,10)
         WRITE(*,'(AX,*(F8.3 X))') 'max_input'    , (opts%max_input(i), i=1,10)
+        WRITE(*,'(AX,*(F8.3 X))') 'margin_input' , (opts%margin_input(i), i=1,10)
         WRITE(*,*) 'constrain_outputs'           , opts%constrain_outputs
-        WRITE(*,'(AX,*(F6.1 X))') 'min_output'   , (opts%min_output(i), i=1,9)
-        WRITE(*,'(AX,*(F6.1 X))') 'max_output'   , (opts%max_output(i), i=1,9)
+        WRITE(*,'(AX,*(F6.1 X))') 'min_output'   , (opts%min_output(i), i=1,20)
+        WRITE(*,'(AX,*(F6.1 X))') 'max_output'   , (opts%max_output(i), i=1,20)
+        WRITE(*,'(AX,*(F6.1 X))') 'margin_output', (opts%margin_output(i), i=1,20)
         WRITE(*,*) 'rotdiv_tem'                  , opts%rotdiv_tem
         WRITE(*,*) 'rotdiv_itg'                  , opts%rotdiv_itg
     end subroutine print_qlknn_options

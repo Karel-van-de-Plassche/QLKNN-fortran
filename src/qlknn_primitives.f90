@@ -176,6 +176,14 @@ contains
             end do
         end if
 
+        call impose_output_constraints(net_result, opts, verbosity)
+        if (verbosity >= 1) then
+            WRITE(*,'(A)') 'rotdiv output clipped'
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+            end do
+        end if
+
         ! Merge ETG/ITG/TEM modes together
         call merge_modes(net_result, merged_net_result, verbosity)
         if (verbosity >= 1) then
@@ -332,6 +340,33 @@ contains
         rotdiv_nets(19) = vcitem_gb_div_vcitem_gb_rot0()
     end subroutine load_nets
 
+    subroutine impose_output_constraints(output, opts, verbosity)
+        real, dimension(:,:), intent(inout) :: output
+        type (qlknn_options), intent(in) :: opts
+        integer, intent(in) :: verbosity
+
+        integer :: ii, rho, n_rho
+        real, dimension(20) :: output_min, output_max
+
+        n_rho = size(output, 1)
+
+        output_min = opts%min_output + (1-opts%margin_output) * abs(opts%min_output)
+        output_max = opts%max_output - (1-opts%margin_output) * abs(opts%max_output)
+        do rho = 1, n_rho
+            where ((output(rho, :) < output_min) .AND. opts%constrain_outputs) &
+                    output(rho, :) = output_min
+            where ((output(rho, :) > output_max) .AND. opts%constrain_outputs) &
+                    output(rho, :) = output_max
+        end do
+
+        if (verbosity >= 1) then
+            write(*,*) 'output clipped, n_rho=', n_rho
+            do rho = 1, n_rho
+                WRITE(*,'(*(F7.2 X))'), (output(ii, rho), ii=1,10)
+            end do
+        end if
+    end subroutine impose_output_constraints
+
     subroutine impose_input_constraints(input, input_clipped, opts, verbosity)
         real, dimension(:,:), intent(in) :: input
         type (qlknn_options), intent(in) :: opts
@@ -343,8 +378,8 @@ contains
 
         n_rho = size(input, 2)
 
-        input_min = opts%min_input + (1-opts%margin) * abs(opts%min_input)
-        input_max = opts%max_input - (1-opts%margin) * abs(opts%max_input)
+        input_min = opts%min_input + (1-opts%margin_input) * abs(opts%min_input)
+        input_max = opts%max_input - (1-opts%margin_input) * abs(opts%max_input)
         input_clipped = input
         do rho = 1, n_rho
             where ((input_clipped(:, rho) < input_min) .AND. opts%constrain_inputs) &
