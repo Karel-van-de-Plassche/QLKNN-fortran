@@ -68,7 +68,7 @@ def nml_dict_to_namelist(nml_dict, sizes):
 
 type_map = {
     'float64': 'REAL',
-    '<U4': 'CHARACTER',
+    '<U4': 'CHARACTER(len=*)',
 }
 def array_to_string(varname, array, type='REAL'):
     if varname.startswith('weights_'):
