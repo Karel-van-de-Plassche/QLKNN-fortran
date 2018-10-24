@@ -1,5 +1,4 @@
 module qlknn_all_nets
-    use net_efiitg_gb
     use net_efeetg_gb
     use net_efeitg_gb_div_efiitg_gb
     use net_efetem_gb
@@ -19,6 +18,7 @@ module qlknn_all_nets
     use net_vtitem_gb_div_efetem_gb
     use net_vciitg_gb_div_efiitg_gb
     use net_vcitem_gb_div_efetem_gb
+    use net_gam_leq_gb
     use net_efeitg_gb_div_efeitg_gb_rot0
     use net_efetem_gb_div_efetem_gb_rot0
     use net_efiitg_gb_div_efiitg_gb_rot0
@@ -37,7 +37,6 @@ module qlknn_all_nets
     use net_vtitem_gb_div_vtitem_gb_rot0
     use net_vciitg_gb_div_vciitg_gb_rot0
     use net_vcitem_gb_div_vcitem_gb_rot0
-    use net_gam_leq_gb
 
     implicit none
 
@@ -45,11 +44,8 @@ module qlknn_all_nets
     type(networktype), dimension(19), save :: rotdiv_nets
 contains
     subroutine load_nets()
-        !type(networktype), dimension(20), save, intent(out) :: nets
-        !type(networktype), dimension(19), save, intent(out) :: rotdiv_nets
         logical, save :: first_call = .TRUE.
         if (first_call) then
-        !if (.TRUE.) then
             nets( 1) = efeetg_gb()
             nets( 2) = efeitg_gb_div_efiitg_gb()
             nets( 3) = efetem_gb()
