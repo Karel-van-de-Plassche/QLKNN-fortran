@@ -72,13 +72,13 @@ contains
         WRITE(*,*) 'use_tem'                     , opts%use_tem
         WRITE(*,*) 'apply_stability_clipping'    , opts%apply_stability_clipping
         WRITE(*,*) 'constrain_inputs'            , opts%constrain_inputs
-        WRITE(*,'(AX,*(F8.3 X))') 'min_input'    , (opts%min_input(i), i=1,10)
-        WRITE(*,'(AX,*(F8.3 X))') 'max_input'    , (opts%max_input(i), i=1,10)
-        WRITE(*,'(AX,*(F8.3 X))') 'margin_input' , (opts%margin_input(i), i=1,10)
+        WRITE(*,'(AX,10(F8.3 X))') 'min_input'   , (opts%min_input(i), i=1,10)
+        WRITE(*,'(AX,10(F8.3 X))') 'max_input'   , (opts%max_input(i), i=1,10)
+        WRITE(*,'(AX,10(F8.3 X))') 'margin_input', (opts%margin_input(i), i=1,10)
         WRITE(*,*) 'constrain_outputs'           , opts%constrain_outputs
-        WRITE(*,'(AX,*(F6.1 X))') 'min_output'   , (opts%min_output(i), i=1,20)
-        WRITE(*,'(AX,*(F6.1 X))') 'max_output'   , (opts%max_output(i), i=1,20)
-        WRITE(*,'(AX,*(F6.1 X))') 'margin_output', (opts%margin_output(i), i=1,20)
+        WRITE(*,'(AX,20(F6.1 X))') 'min_output'  , (opts%min_output(i), i=1,20)
+        WRITE(*,'(AX,20(F6.1 X))') 'max_output'  , (opts%max_output(i), i=1,20)
+        WRITE(*,'(AX,20(F6.1 X))') 'margin_output', (opts%margin_output(i), i=1,20)
         WRITE(*,*) 'rotdiv_tem'                  , opts%rotdiv_tem
         WRITE(*,*) 'rotdiv_itg'                  , opts%rotdiv_itg
     end subroutine print_qlknn_options

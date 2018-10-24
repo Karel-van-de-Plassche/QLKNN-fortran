@@ -29,6 +29,7 @@ contains
         type (qlknn_options) :: opts
         logical, dimension(20) :: net_evaluate
         logical, dimension(19) :: rotdiv_evaluate
+        character(len=100) :: fmt_tmp
         ! zeff ati  ate   an         q      smag         x  ti_te logNustar
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
@@ -52,7 +53,7 @@ contains
             call print_qlknn_options(opts)
             write(*,*) 'input, n_rho=', n_rho
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (input(ii, rho), ii=1,10)
+                WRITE(*,'(10(F7.2 X))'), (input(ii, rho), ii=1,10)
             end do
         end if
 
@@ -91,16 +92,18 @@ contains
         ! Clip leading fluxes to 0
         call impose_leading_flux_constraints(net_result, verbosity)
         if (verbosity >= 2) then
-            WRITE(*,'(A)') 'net_result (pre-div-multiplicate)'
+            WRITE(*,*) 'net_result (pre-div-multiplicate)'
+            write(fmt_tmp,*) '(', n_nets, '(F7.2 X))'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+                WRITE(*,fmt_tmp), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
         if (verbosity >= 2) then
-            WRITE(*,'(A)') 'rotdiv_result'
+            WRITE(*,*) 'rotdiv_result'
+            write(fmt_tmp,*) '(', n_rotdiv, '(F7.2 X))'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
+                WRITE(*,fmt_tmp), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
             end do
         end if
 
@@ -112,7 +115,8 @@ contains
         if (verbosity >= 2) then
             WRITE(*,'(A)') 'net_result'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+                write(fmt_tmp,*) '(', n_nets, '(F7.2 X))'
+                WRITE(*,fmt_tmp), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
@@ -124,7 +128,8 @@ contains
         if (verbosity >= 2) then
             WRITE(*,'(A)') 'rotdiv multiplied net_result'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+                write(fmt_tmp,*) '(', n_nets, '(F7.2 X))'
+                WRITE(*,fmt_tmp), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
@@ -133,7 +138,8 @@ contains
         if (verbosity >= 2) then
             WRITE(*,'(A)') 'rotdiv stability clipped'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+                write(fmt_tmp,*) '(', n_nets, '(F7.2 X))'
+                WRITE(*,fmt_tmp), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
@@ -141,16 +147,17 @@ contains
         if (verbosity >= 1) then
             WRITE(*,'(A)') 'rotdiv output clipped'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
+                write(fmt_tmp,*) '(', n_nets, '(F7.2 X))'
+                WRITE(*,fmt_tmp), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
         ! Merge ETG/ITG/TEM modes together
         call merge_modes(net_result, merged_net_result, verbosity)
         if (verbosity >= 1) then
-            WRITE(*,'(A)') 'rotdiv modes merged'
+            WRITE(*,*) 'rotdiv modes merged'
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (merged_net_result(rho, ii), ii=1,7)
+                WRITE(*,'(7(F7.2 X))'), (merged_net_result(rho, ii), ii=1,7)
             end do
         end if
 
@@ -162,7 +169,7 @@ contains
         type(networktype), intent(in) :: net
         integer, optional, intent(in) :: verbosityin
         integer:: verbosity
-        real, dimension(:,:), allocatable ::   output
+        real, dimension(:,:), allocatable :: output
         real, dimension(:), intent(out) :: output_1d
         integer num
 
@@ -171,6 +178,11 @@ contains
         real, dimension(:,:), allocatable :: inp_resc
         real, dimension(:,:), allocatable :: B_hidden, B_output
         character(len=200) :: error_msg
+#ifdef __PGI
+#ifndef USE_MKL
+        real, dimension(:,:), allocatable :: output_tmp
+#endif
+#endif
 
         if(present(verbosityin)) then
             verbosity=verbosityin
@@ -184,14 +196,26 @@ contains
         n_outputs = size(net%weights_output, 1)
         n_rho = size(input, 2)
         if (n_outputs > 1) then
+#ifdef __PGI
+            STOP 'Expected 1D output from network!'
+#else
             ERROR STOP 'Expected 1D output from network!'
+#endif
         end if
         if (.NOT. size(output_1d) == n_rho) then
+#ifdef __PGI
+            STOP 'Passed output_1d has wrong shape!'
+#else
             ERROR STOP 'Passed output_1d has wrong shape!'
+#endif
         end if
         if (.NOT. n_inputs == size(input, 1)) then
             write(error_msg,*) 'Passed input has wrong number of inputs! It is ', size(input, 1), ', should be ', n_inputs
+#ifdef __PGI
+            STOP error_msg
+#else
             ERROR STOP error_msg
+#endif
         end if
         allocate(inp_resc(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
         allocate(B_hidden(n_hidden_nodes, n_rho))
@@ -205,7 +229,7 @@ contains
             write(*, *) 'n_rho', n_rho
             write(*,*) 'input'
             do rho = 1, n_rho
-                write(*,'(*(f7.2 x))') input(:, rho)
+                write(*,'(10(f7.2 x))') input(:, rho)
             end do
         end if
         if (verbosity >= 3) write(*,*) 'evaluating network'
@@ -213,7 +237,7 @@ contains
         do rho = 1, n_rho
             inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
                 net%feature_prescale_bias
-            if (verbosity >= 3) write(*,'(*(f7.2 x))') inp_resc(:, rho)
+            if (verbosity >= 3) write(*,'(10(f7.2 x))') inp_resc(:, rho)
         end do
 
         do rho = 1, n_rho
@@ -221,12 +245,17 @@ contains
         end do
         CALL dgemm('N', 'N', n_hidden_nodes, n_rho, n_inputs, 1., net%weights_input, n_hidden_nodes, inp_resc, n_inputs, 1., &
         B_hidden, n_hidden_nodes)
+#ifdef __PGI
+#ifndef USE_MKL
+        allocate(output(n_hidden_nodes, n_rho))
+#endif
+#endif
         output = B_hidden
         CALL vdtanh(n_rho * n_hidden_nodes, output, output)
         if (verbosity >= 3) then
             write(*,*) 'input_layer post_tanh. (1:10, :)'
             do rho = 1, n_rho
-                write(*,'(*(f7.2 x))') output(1:10, rho)
+                write(*,'(10(f7.2 x))') output(1:10, rho)
             end do
         end if
 
@@ -242,7 +271,7 @@ contains
                 write(*,*) 'hidden_layer ', lay, ' pre_tanh. (1:10, :)'
                 write(*,*) shape(output)
                 do rho = 1, n_rho
-                    write(*,'(*(f7.2 x))') output(1:10, rho)
+                    write(*,'(10(f7.2 x))') output(1:10, rho)
                 end do
             end if
             CALL vdtanh(n_rho * n_hidden_nodes, output, output)
@@ -250,7 +279,7 @@ contains
                 write(*,*) 'hidden_layer ', lay, ' post_tanh. (1:10, :)'
                 write(*,*) shape(output)
                 do rho = 1, n_rho
-                    write(*,'(*(f7.2 x))') output(1:10, rho)
+                    write(*,'(10(f7.2 x))') output(1:10, rho)
                 end do
             end if
         end do
@@ -262,16 +291,25 @@ contains
             1., net%weights_output, n_outputs, &
             output, n_hidden_nodes, &
             1., B_output, n_outputs)
+        write(*,*) shape(B_output)
+#ifdef __PGI
+#ifndef USE_MKL
+        allocate(output_tmp(n_hidden_nodes, n_rho))
+        output_tmp = output
+        deallocate(output)
+        allocate(output(n_outputs, n_rho))
+#endif
+#endif
         output = B_output
         if (verbosity >= 3) write(*,*) 'output_layer'
-        if (verbosity >= 3) write(*,'(*(f7.2 x))') output
+        if (verbosity >= 3) write(*,'(20(f7.2 x))') output
 
         do rho = 1, n_rho
             output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
                 net%target_prescale_bias)
         end do
         if (verbosity >= 3) write(*,*) 'output_descaled'
-        if (verbosity >= 3) write(*,'(*(f7.2 x))') output
+        if (verbosity >= 3) write(*,'(20(f7.2 x))') output
 
         output_1d(:) = output(1, :)
         !WRITE(*,'(*(F7.2 X))'), (output(1, ii), ii=1,n_rho)
@@ -302,7 +340,7 @@ contains
         if (verbosity >= 2) then
             write(*,*) 'output clipped, n_rho=', n_rho
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (output(ii, rho), ii=1,10)
+                WRITE(*,'(20(F7.2 X))'), (output(ii, rho), ii=1,20)
             end do
         end if
     end subroutine impose_output_constraints
@@ -320,6 +358,11 @@ contains
 
         input_min = opts%min_input + (1-opts%margin_input) * abs(opts%min_input)
         input_max = opts%max_input - (1-opts%margin_input) * abs(opts%max_input)
+#ifdef __PGI
+#ifndef USE_MKL
+        allocate(input_clipped(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
+#endif
+#endif
         input_clipped = input
         do rho = 1, n_rho
             where ((input_clipped(:, rho) < input_min) .AND. opts%constrain_inputs) &
@@ -331,7 +374,7 @@ contains
         if (verbosity >= 2) then
             write(*,*) 'input clipped, n_rho=', n_rho
             do rho = 1, n_rho
-                WRITE(*,'(*(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
+                WRITE(*,'(10(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
             end do
         end if
     end subroutine impose_input_constraints
