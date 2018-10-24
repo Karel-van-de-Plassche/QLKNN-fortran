@@ -63,26 +63,20 @@ QLKNN_NET_SRCS=$(QLKNN_NET_FILES:%=$(QLKNN_SRC)/%)
 QLKNN_NET_OBJS=$(QLKNN_NET_SRCS:%f90=%o)
 QLKNN_NET_MODS=$(QLKNN_NET_SRCS:%f90=%mod)
 
-QLKNN_FILES=qlknn_primitives.f90 qlknn_disk_io.f90 qlknn_types.f90 qlknn_all_nets.f90
+QLKNN_FILES=qlknn_primitives.f90 qlknn_disk_io.f90 qlknn_types.f90
 QLKNN_SRCS=$(QLKNN_FILES:%=$(QLKNN_SRC)/%)
 QLKNN_OBJS=$(QLKNN_SRCS:%f90=%o)
 QLKNN_MODS=$(QLKNN_SRCS:%f90=%mod)
 
-# Qualikiz objects
-$(QLKNN_SRC)/qlknn_all_nets.o: $(QLKNN_NET_MODS)
-$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlknn_types.mod $(QLKNN_SRC)/qlknn_all_nets.mod
+# QLKNN objects
+#$(QLKNN_SRC)/qlknn_all_nets.o: $(QLKNN_NET_MODS)
+$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlknn_types.mod
 $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 
 ###############################################################################
 qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS) $(QLKNN_MODS)
-	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) qlknn_test.f90 -o $@
-	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(MPI) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
+	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(MPI) $(QLKNN_OBJS) $(QLKNN_LIBS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
 	chmod +x $@
-
-#$(QLKNN_OBJS) :%.o:%.f90
-	#$(FC) $(OPENMP) $(F90FLAGS) -c $<
-	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QUALIKIZ_LIBS) -c $<
-
 
 $(QLKNN_MODS) $(QLKNN_NET_MODS):%.mod:%.o
 
