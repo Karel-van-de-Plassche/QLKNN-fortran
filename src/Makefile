@@ -74,9 +74,9 @@ $(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlk
 $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 
 ###############################################################################
-qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
+qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS) $(QLKNN_MODS)
 	#$(FC_PREAMBLE) $(FC_WRAPPER) $(FFLAGS) $(MPI_FLAGS) $(OPENMP_FLAGS) $(QLKNN_OBJS) $(QLKNN_LIBS) qlknn_test.f90 -o $@
-	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(OPENMP) $(MPI) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
+	$(FC_PREAMBLE) $(FC) $(FFLAGS) $(MPI) $(QLKNN_OBJS) $(QLKNN_LIBS) $(QLKNN_NET_OBJS) $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL_LINK) $< -o $@
 	chmod +x $@
 
 #$(QLKNN_OBJS) :%.o:%.f90
@@ -87,10 +87,10 @@ qlknn_test: $(QLKNN_SRC)/qlknn_test.f90 $(QLKNN_OBJS)
 $(QLKNN_MODS) $(QLKNN_NET_MODS):%.mod:%.o
 
 $(QLKNN_OBJS) :%.o:%.f90
-	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $(OPENMP) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL) -o $@
+	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) $(INTEL_MKL) -o $@
 
 $(QLKNN_NET_OBJS) :%.o:%.f90
-	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $(OPENMP) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) -o $@
+	$(FC_PREAMBLE) $(FC) -c $(FFLAGS) $< $(MODULE_PATH_OPTION) $(QLKNN_SRC) -o $@
 
 clean:
 	rm -f $(QLKNN_SRC)/*.o $(QLKNN_SRC)/*.mod $(QLKNN_SRC)/*__genmod.f90
