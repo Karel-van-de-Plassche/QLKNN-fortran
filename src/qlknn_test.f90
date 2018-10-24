@@ -1,14 +1,14 @@
 program qlknn_test
     use qlknn_primitives
-    use qlknn_all_nets
+    use qlknn_disk_io
     implicit none
-    integer n_trails, trial, verbosity, rho
+    integer :: n_trails, trial, verbosity, rho
     real, dimension(10,24) :: input
     real :: start, finish
     real, dimension(10) :: perturb
     namelist /test/ input
     print *, "Hello World!"
-    open(10,file='test.nml')
+    open(10,file='test.nml',action='READ')
     read(10,nml=test)
 
     n_trails = 1
@@ -19,7 +19,7 @@ program qlknn_test
         !do rho = 1, 24
         !    input(:, rho) = input(:, rho) + perturb
         !end do
-        call load_nets()
+        call load_all_nets_from_disk('.')
         call evaluate_QLKNN_10D(input, nets, rotdiv_nets, verbosity)
     end do
     call cpu_time(finish)

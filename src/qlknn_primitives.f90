@@ -2,7 +2,6 @@
 module qlknn_primitives
     use qlknn_disk_io
     use qlknn_types
-    use qlknn_all_nets
 
     implicit none
 #ifdef USE_MKL

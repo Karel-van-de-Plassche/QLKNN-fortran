@@ -67,8 +67,11 @@ def nn_dict_to_namelist_dict(nn_dict):
 def nml_dict_to_namelist(name, nml_dict, sizes, target_dir='../src'):
     nml = f90nml.namelist.Namelist()
     nml['sizes'] = sizes
-    nml['net'] = f90nml.namelist.Namelist(nml_dict)
-    nml.write(os.path.join(target_dir,  name + '.nml'), force=True)
+    nml['netfile'] = f90nml.namelist.Namelist(nml_dict)
+    nml.float_format = '.10g'
+    out_path = os.path.join(target_dir,  'net_' + name.lower() + '.nml')
+    print('Writing to', out_path)
+    nml.write(out_path, force=True)
 
 type_map = {
     'float64': 'REAL',

@@ -33,4 +33,5 @@
 
 # QuaLiKiz nets
 net_*.f90
+net_*.nml
 __pycache__
