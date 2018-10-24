@@ -1,6 +1,5 @@
 ! file: fib3.f
 module qlknn_primitives
-    use qlknn_disk_io
     use qlknn_types
 
     implicit none

@@ -70,7 +70,7 @@ QLKNN_MODS=$(QLKNN_SRCS:%f90=%mod)
 
 # QLKNN objects
 #$(QLKNN_SRC)/qlknn_all_nets.o: $(QLKNN_NET_MODS)
-$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_disk_io.mod $(QLKNN_SRC)/qlknn_types.mod
+$(QLKNN_SRC)/qlknn_primitives.o: $(QLKNN_SRC)/qlknn_types.mod
 $(QLKNN_SRC)/qlknn_disk_io.o: $(QLKNN_SRC)/qlknn_types.mod
 
 ###############################################################################
