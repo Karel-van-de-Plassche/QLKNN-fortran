@@ -269,7 +269,6 @@ contains
             output = B_hidden
             if (verbosity >= 3) then
                 write(*,*) 'hidden_layer ', lay, ' pre_tanh. (1:10, :)'
-                write(*,*) shape(output)
                 do rho = 1, n_rho
                     write(*,'(10(f7.2 x))') output(1:10, rho)
                 end do
@@ -277,7 +276,6 @@ contains
             CALL vdtanh(n_rho * n_hidden_nodes, output, output)
             if (verbosity >= 3) then
                 write(*,*) 'hidden_layer ', lay, ' post_tanh. (1:10, :)'
-                write(*,*) shape(output)
                 do rho = 1, n_rho
                     write(*,'(10(f7.2 x))') output(1:10, rho)
                 end do
@@ -291,7 +289,6 @@ contains
             1., net%weights_output, n_outputs, &
             output, n_hidden_nodes, &
             1., B_output, n_outputs)
-        write(*,*) shape(B_output)
 #ifdef __PGI
 #ifndef USE_MKL
         allocate(output_tmp(n_hidden_nodes, n_rho))
