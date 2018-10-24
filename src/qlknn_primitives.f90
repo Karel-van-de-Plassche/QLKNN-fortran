@@ -76,12 +76,12 @@ contains
         ! Evaluate all neural networks
         do ii =1,n_nets
             if (net_evaluate(ii)) then
-                call evaluate_network(net_input, nets(ii), net_result(:, ii))
+                call evaluate_network(net_input, nets(ii), net_result(:, ii), verbosity)
             end if
         end do
         do ii =2,n_rotdiv
             if (rotdiv_evaluate(ii)) then
-                call evaluate_network(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii))
+                call evaluate_network(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii), verbosity)
             end if
         end do
         ! Use the efi rotdiv for efe
@@ -171,8 +171,9 @@ contains
         integer :: n_hidden_layers, n_hidden_nodes, n_inputs, n_outputs, n_rho
         real, dimension(:,:), allocatable :: inp_resc
         real, dimension(:,:), allocatable :: B_hidden, B_output
+        character(len=200) :: error_msg
 
-        if(present(verbosityin))then
+        if(present(verbosityin)) then
             verbosity=verbosityin
         else
             verbosity = 0
@@ -190,7 +191,8 @@ contains
             ERROR STOP 'Passed output_1d has wrong shape!'
         end if
         if (.NOT. n_inputs == size(input, 1)) then
-            ERROR STOP 'Passed input has wrong number of inputs!'
+            write(error_msg,*) 'Passed input has wrong number of inputs! It is ', size(input, 1), ', should be ', n_inputs
+            ERROR STOP error_msg
         end if
         allocate(inp_resc(lbound(input,1):ubound(input,1), lbound(input,2):ubound(input,2)))
         allocate(B_hidden(n_hidden_nodes, n_rho))
@@ -207,6 +209,7 @@ contains
                 write(*,'(*(f7.2 x))') input(:, rho)
             end do
         end if
+        if (verbosity >= 2) write(*,*) 'evaluating network'
         if (verbosity >= 2) write(*,*) 'inp_resc'
         do rho = 1, n_rho
             inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
@@ -221,6 +224,12 @@ contains
         B_hidden, n_hidden_nodes)
         output = B_hidden
         CALL vdtanh(n_rho * n_hidden_nodes, output, output)
+        if (verbosity >= 2) then
+            write(*,*) 'input_layer post_tanh. (1:10, :)'
+            do rho = 1, n_rho
+                write(*,'(*(f7.2 x))') output(1:10, rho)
+            end do
+        end if
 
         do lay = 1, n_hidden_layers - 1
             do rho = 1, n_rho
@@ -230,7 +239,21 @@ contains
             n_hidden_nodes, 1., &
             B_hidden, n_hidden_nodes)
             output = B_hidden
+            if (verbosity >= 2) then
+                write(*,*) 'hidden_layer ', lay, ' pre_tanh. (1:10, :)'
+                write(*,*) shape(output)
+                do rho = 1, n_rho
+                    write(*,'(*(f7.2 x))') output(1:10, rho)
+                end do
+            end if
             CALL vdtanh(n_rho * n_hidden_nodes, output, output)
+            if (verbosity >= 2) then
+                write(*,*) 'hidden_layer ', lay, ' post_tanh. (1:10, :)'
+                write(*,*) shape(output)
+                do rho = 1, n_rho
+                    write(*,'(*(f7.2 x))') output(1:10, rho)
+                end do
+            end if
         end do
 
         do rho = 1, n_rho
