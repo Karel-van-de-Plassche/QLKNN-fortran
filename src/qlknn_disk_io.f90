@@ -101,8 +101,8 @@ contains
         !write(*, *) 'n_outputs', n_outputs
         allocate(weights_input(n_hidden_nodes, n_inputs))
         allocate(biases_input(n_hidden_nodes))
-        allocate(weights_hidden(n_hidden_layers-1, n_hidden_nodes, n_hidden_nodes))
-        allocate(biases_hidden(n_hidden_layers-1, n_hidden_nodes))
+        allocate(weights_hidden(n_hidden_nodes, n_hidden_nodes, n_hidden_layers-1))
+        allocate(biases_hidden(n_hidden_nodes, n_hidden_layers-1))
         allocate(weights_output(1, n_hidden_nodes))
         allocate(biases_output(n_outputs))
         allocate(hidden_activation(n_hidden_layers))
@@ -113,10 +113,10 @@ contains
         read(10,nml=netfile)
         close(10)
         !write(*,nml=net)
-        net%weights_input = reshape(weights_input, shape=[n_hidden_nodes, n_inputs], order=[1, 2])
+        net%weights_input = weights_input
         net%biases_input = biases_input
-        net%biases_hidden = reshape(biases_hidden, shape=[n_hidden_nodes, n_hidden_layers-1], order=[2,1])
-        net%weights_hidden = reshape(weights_hidden, shape=[n_hidden_nodes, n_hidden_nodes,  n_hidden_layers-1], order=[3,1,2])
+        net%biases_hidden = biases_hidden
+        net%weights_hidden = weights_hidden
         net%weights_output = weights_output
         net%biases_output = biases_output
 

@@ -65,18 +65,61 @@ def nn_dict_to_namelist_dict(nn_dict):
     return name, nml_dict, sizes
 
 def nml_dict_to_namelist(name, nml_dict, sizes, target_dir='../src'):
-    nml = f90nml.namelist.Namelist()
-    nml['sizes'] = sizes
-    nml['netfile'] = f90nml.namelist.Namelist(nml_dict)
-    nml.float_format = '.10g'
-    out_path = os.path.join(target_dir,  'net_' + name.lower() + '.nml')
+    #nml['sizes'] = sizes
+    np.set_printoptions(threshold=np.inf)
+    init_strings = []
+    declare_strings = []
+    out_path = os.path.join(target_dir, 'net_' + name.lower() + '.nml')
+    with open(out_path, 'w') as f:
+        f.write('&sizes\n')
+        for key, val in sizes.items():
+            f.write('    ' + key + ' = ' + str(val) + '\n')
+        f.write('/\n\n')
+    for key, val in nml_dict.items():
+        if isinstance(val, list):
+            init_str = array_to_namelist_string(key, np.array(val))
+            init_strings.append(init_str)
+            #declare_strings.append(declare_str)
+        else:
+            print('Do not know what to do with {!s}'.format(key))
+            embed()
+            raise Exception
+    #nml_dict['weights_input'] = np.asfortranarray(nml_dict['weights_input']).tolist()
+    #nml_dict['biases_hidden'] = np.asfortranarray(nml_dict['biases_hidden']).T.tolist()
+    #arr = np.array(nml_dict['weights_hidden'])
+    #init_str = array_to_namelist_string('weights_hidden', arr)
     print('Writing to', out_path)
-    nml.write(out_path, force=True)
+    with open(out_path, 'a') as f:
+        f.write('&netfile\n')
+        #f.writelines([el + '\n' for el in declare_strings])
+        #f.write('\n')
+        f.writelines(['    ' + el + '\n' for el in init_strings])
+        f.write('/\n')
 
 type_map = {
     'float64': 'REAL',
     '<U4': 'CHARACTER(len=*)',
 }
+def array_to_namelist_string(varname, array, type='REAL'):
+    if varname.startswith('weights_'):
+        array = array.swapaxes(0,1)
+    init_str = ''
+    np.set_printoptions(threshold=np.inf)
+    line_to_string = lambda line: np.array2string(line, max_line_width=np.inf, separator=', ', formatter={'str_kind': lambda x: '"' + x + '"'}).replace('[', '').replace(']', '')
+    if array.ndim == 1:
+        linestr = line_to_string(array)
+        init_str += varname + ' = ' + linestr + '\n'
+    elif array.ndim == 2:
+        for column in range(array.shape[1]):
+            linestr = line_to_string(array[:, column])
+            init_str += varname + '(:, ' + str(column + 1) + ') = ' + linestr + '\n'
+    elif array.ndim == 3:
+        for page in range(array.shape[2]):
+            for column in range(array.shape[1]):
+                linestr = line_to_string(array[:, column, page])
+                init_str += varname + '(:, ' + str(column + 1) + ', ' + str(page + 1) + ') = ' + linestr + '\n'
+    return init_str
+
 def array_to_string(varname, array, type='REAL'):
     if varname.startswith('weights_'):
         array = array.swapaxes(0,1)
@@ -168,4 +211,4 @@ def convert_all(path, target_dir='../src', target='namelist'):
 if __name__ == '__main__':
     name, nml_dict, sizes = nn_json_to_namelist_dict('./test_nn.json')
     #src_str = nml_dict_to_source(name, nml_dict)
-    nml_dict_to_namelist(nml_dict, sizes)
+    nml_dict_to_namelist(name, nml_dict, sizes)
