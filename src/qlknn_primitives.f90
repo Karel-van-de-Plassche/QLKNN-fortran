@@ -45,7 +45,7 @@ contains
 
         allocate(res(n_rho)) !Debug
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             write(*,*) net_evaluate, rotdiv_evaluate
         end if
         CALL default_qlknn_options(opts)
@@ -63,7 +63,7 @@ contains
         net_input = input(1:9, :)
         rotdiv_input = input((/3, 7, 5, 6, 2, 4, 8, 10/), :)
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             write(*,*) 'net_input'
             write(*,*) net_input(:,1)
             write(*,*) 'rotdiv_input'
@@ -91,14 +91,14 @@ contains
 
         ! Clip leading fluxes to 0
         call impose_leading_flux_constraints(net_result, verbosity)
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,'(A)') 'net_result (pre-div-multiplicate)'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
             end do
         end if
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,'(A)') 'rotdiv_result'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (rotdiv_result(rho, ii), ii=1,n_rotdiv)
@@ -110,7 +110,7 @@ contains
 
         call multiply_div_networks(net_result, verbosity)
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,'(A)') 'net_result'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
@@ -122,7 +122,7 @@ contains
             CALL vdmul(n_rho, net_result(:, idx), rotdiv_result(:, idx), net_result(:, idx))
         end do
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,'(A)') 'rotdiv multiplied net_result'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
@@ -131,7 +131,7 @@ contains
 
         ! Clip based on leading
         call apply_stability_clipping(net_result, verbosity)
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,'(A)') 'rotdiv stability clipped'
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (net_result(rho, ii), ii=1,n_nets)
@@ -198,7 +198,7 @@ contains
         allocate(B_hidden(n_hidden_nodes, n_rho))
         allocate(B_output(n_outputs, n_rho))
 
-        if (verbosity >= 2) then
+        if (verbosity >= 3) then
             write(*, *) 'n_hidden_layers', n_hidden_layers
             write(*, *) 'n_hidden_nodes', n_hidden_nodes
             write(*, *) 'n_inputs', n_inputs
@@ -209,12 +209,12 @@ contains
                 write(*,'(*(f7.2 x))') input(:, rho)
             end do
         end if
-        if (verbosity >= 2) write(*,*) 'evaluating network'
-        if (verbosity >= 2) write(*,*) 'inp_resc'
+        if (verbosity >= 3) write(*,*) 'evaluating network'
+        if (verbosity >= 3) write(*,*) 'inp_resc'
         do rho = 1, n_rho
             inp_resc(:,rho) = net%feature_prescale_factor * input(:,rho) + &
                 net%feature_prescale_bias
-            if (verbosity >= 2) write(*,'(*(f7.2 x))') inp_resc(:, rho)
+            if (verbosity >= 3) write(*,'(*(f7.2 x))') inp_resc(:, rho)
         end do
 
         do rho = 1, n_rho
@@ -224,7 +224,7 @@ contains
         B_hidden, n_hidden_nodes)
         output = B_hidden
         CALL vdtanh(n_rho * n_hidden_nodes, output, output)
-        if (verbosity >= 2) then
+        if (verbosity >= 3) then
             write(*,*) 'input_layer post_tanh. (1:10, :)'
             do rho = 1, n_rho
                 write(*,'(*(f7.2 x))') output(1:10, rho)
@@ -239,7 +239,7 @@ contains
             n_hidden_nodes, 1., &
             B_hidden, n_hidden_nodes)
             output = B_hidden
-            if (verbosity >= 2) then
+            if (verbosity >= 3) then
                 write(*,*) 'hidden_layer ', lay, ' pre_tanh. (1:10, :)'
                 write(*,*) shape(output)
                 do rho = 1, n_rho
@@ -247,7 +247,7 @@ contains
                 end do
             end if
             CALL vdtanh(n_rho * n_hidden_nodes, output, output)
-            if (verbosity >= 2) then
+            if (verbosity >= 3) then
                 write(*,*) 'hidden_layer ', lay, ' post_tanh. (1:10, :)'
                 write(*,*) shape(output)
                 do rho = 1, n_rho
@@ -264,15 +264,15 @@ contains
             output, n_hidden_nodes, &
             1., B_output, n_outputs)
         output = B_output
-        if (verbosity >= 2) write(*,*) 'output_layer'
-        if (verbosity >= 2) write(*,'(*(f7.2 x))') output
+        if (verbosity >= 3) write(*,*) 'output_layer'
+        if (verbosity >= 3) write(*,'(*(f7.2 x))') output
 
         do rho = 1, n_rho
             output(:,rho) = dot_product(1/net%target_prescale_factor, output(:,rho) - &
                 net%target_prescale_bias)
         end do
-        if (verbosity >= 2) write(*,*) 'output_descaled'
-        if (verbosity >= 2) write(*,'(*(f7.2 x))') output
+        if (verbosity >= 3) write(*,*) 'output_descaled'
+        if (verbosity >= 3) write(*,'(*(f7.2 x))') output
 
         output_1d(:) = output(1, :)
         !WRITE(*,'(*(F7.2 X))'), (output(1, ii), ii=1,n_rho)
@@ -300,7 +300,7 @@ contains
                     output(rho, :) = output_max
         end do
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             write(*,*) 'output clipped, n_rho=', n_rho
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (output(ii, rho), ii=1,10)
@@ -329,7 +329,7 @@ contains
                     input_clipped(:, rho) = input_max
         end do
 
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             write(*,*) 'input clipped, n_rho=', n_rho
             do rho = 1, n_rho
                 WRITE(*,'(*(F7.2 X))'), (input_clipped(ii, rho), ii=1,10)
@@ -342,7 +342,7 @@ contains
         integer, intent(in) :: verbosity
         integer :: ii, idx
         ! Clip leading fluxes to 0
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0
         end if
         WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0) &
@@ -363,7 +363,7 @@ contains
         real, dimension(:,:), intent(inout):: net_result
         integer, intent(in) :: verbosity
         ! Clip leading fluxes to 0
-        if (verbosity >= 1) then
+        if (verbosity >= 2) then
             WRITE(*,*) net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0
         end if
         WHERE (net_result(:, (/leading_ETG, leading_ITG, leading_TEM/)).le.0) &
