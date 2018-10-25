@@ -18,7 +18,7 @@ contains
         integer, optional, intent(in) :: verbosityin
         type(networktype), dimension(20), intent(in) :: nets
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
-        real, dimension(:,:), allocatable, intent(out) :: qlknn_out
+        real, dimension(:,:), intent(out) :: qlknn_out
 
         integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx, verbosity
         real, dimension(:), allocatable :: res, x, y
@@ -45,11 +45,26 @@ contains
         n_rho = size(input, 2)
         allocate(net_input(9, n_rho))
         allocate(net_result(n_rho, n_nets))
-        allocate(qlknn_out(n_rho, 9))
         allocate(rotdiv_input(8, n_rho))
         allocate(rotdiv_result(n_rho, n_rotdiv))
 
         allocate(res(n_rho)) !Debug
+
+        if (.NOT. (n_rho == size(qlknn_out, 1))) then
+#ifdef __PGI
+            STOP 'Rows of qlknn_out should be equal to number of radial points'
+#else
+            ERROR STOP 'Rows of qlknn_out should be equal to number of radial points'
+#endif
+        end if
+
+        if (.NOT. (7 == size(qlknn_out, 2))) then
+#ifdef __PGI
+            STOP 'Columns of qlknn_out should be equal to 7'
+#else
+            ERROR STOP 'Columns of qlknn_out should be equal to 7'
+#endif
+        end if
 
         if (verbosity >= 2) then
             write(*,*) net_evaluate, rotdiv_evaluate
@@ -433,7 +448,7 @@ contains
     subroutine merge_modes(net_result, merged_net_result, verbosity)
         real, dimension(:,:), intent(in):: net_result
         integer, intent(in) :: verbosity
-        real, dimension(:,:), intent(out), allocatable :: merged_net_result
+        real, dimension(:,:), intent(out) :: merged_net_result
         integer :: n_rho, ii
         n_rho = size(net_result, 1)
         !'efe_GB' % 1
@@ -443,7 +458,6 @@ contains
         !'vte_GB' % 5
         !'dfi_GB' % 6
         !'vti_GB' % 7
-        allocate(merged_net_result(n_rho, 7))
         do ii = 1, n_rho
             merged_net_result(ii, 1) = sum(net_result(ii, 1:3))
             merged_net_result(ii, 2) = sum(net_result(ii, 4:5))

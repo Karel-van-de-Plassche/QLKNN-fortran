@@ -6,7 +6,7 @@ program qlknn_test
     real, dimension(10,24) :: input
     real :: start, finish
     real, dimension(10) :: perturb
-    real, dimension(:,:), allocatable :: qlknn_out
+    real, dimension(24,7) :: qlknn_out
     namelist /test/ input
     print *, "Hello World!"
     open(10,file='test.nml',action='READ')
@@ -14,13 +14,17 @@ program qlknn_test
 
     n_trails = 1
     verbosity = 0
+#ifdef __PGI
+    call load_all_nets_from_disk('/common/EFDA-TFJETALL/QLKNN_networks', verbosity)
+#else
+    call load_all_nets_from_disk('.', verbosity)
+#endif
     call cpu_time(start)
     do trial = 1,n_trails
         !perturb = 1e-1 * (/rand(), rand(), rand(), rand(), rand(), rand(), rand(), rand(), rand(), rand()/)
         !do rho = 1, 24
         !    input(:, rho) = input(:, rho) + perturb
         !end do
-        call load_all_nets_from_disk('.')
         call evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosity)
     end do
     call cpu_time(finish)
