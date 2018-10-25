@@ -1,5 +1,5 @@
 #!/bin/make -f
-QLKNN_SRC:=$(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
+QLKNN_SRC?=$(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
 #MAKEFILE_DIRECTORY := $(dir $(CURRENT_MAKEFILE))
 #ROOT_DIR=..
 #CURRENT_DIRECTORY:=$(shell pwd)

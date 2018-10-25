@@ -31,7 +31,8 @@ QLKNN_TOOLS_DIR=$(QLKNNDIR)/tools
 #	@echo $(LIBNAME)
 
 all: $(LIBNAME)
-$(LIBNAME): $(QLKNN_MODS)
+$(LIBNAME): $(QLKNN_OBJS)
+	ar vr $(LIBNAME) $?
 
 #$(LIBNAME) $(QLKNNDIR)/src/qlknn_primitives.mod: $(FOBJ) $(QLKNNDIR)/src/qlknn_primitives.f90
 #	@echo $(LIBNAME)
