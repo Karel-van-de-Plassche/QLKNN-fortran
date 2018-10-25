@@ -6,6 +6,7 @@ program qlknn_test
     real, dimension(10,24) :: input
     real :: start, finish
     real, dimension(10) :: perturb
+    real, dimension(:,:), allocatable :: qlknn_out
     namelist /test/ input
     print *, "Hello World!"
     open(10,file='test.nml',action='READ')
@@ -20,7 +21,7 @@ program qlknn_test
         !    input(:, rho) = input(:, rho) + perturb
         !end do
         call load_all_nets_from_disk('.')
-        call evaluate_QLKNN_10D(input, nets, rotdiv_nets, verbosity)
+        call evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosity)
     end do
     call cpu_time(finish)
     print '("Time = ",f9.3," milliseconds.")',1e3*(finish-start)/n_trails

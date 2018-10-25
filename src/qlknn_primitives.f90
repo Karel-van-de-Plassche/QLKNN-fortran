@@ -12,16 +12,17 @@ module qlknn_primitives
     integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
     integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
 contains
-    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, verbosity)
+    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosity)
         real, dimension(:,:), intent(in) :: input
         real, dimension(:,:), allocatable :: input_clipped
         integer, intent(in) :: verbosity
         type(networktype), dimension(20), intent(in) :: nets
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
+        real, dimension(:,:), allocatable, intent(out) :: qlknn_out
 
         integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx
         real, dimension(:), allocatable :: res, x, y
-        real, dimension(:,:), allocatable :: net_result, rotdiv_result, merged_net_result
+        real, dimension(:,:), allocatable :: net_result, rotdiv_result
         real, dimension(:), allocatable :: gam_leq
         real, dimension(:,:), allocatable :: net_input
         real, dimension(:,:), allocatable ::rotdiv_input
@@ -38,7 +39,7 @@ contains
         n_rho = size(input, 2)
         allocate(net_input(9, n_rho))
         allocate(net_result(n_rho, n_nets))
-        allocate(merged_net_result(n_rho, 9))
+        allocate(qlknn_out(n_rho, 9))
         allocate(rotdiv_input(8, n_rho))
         allocate(rotdiv_result(n_rho, n_rotdiv))
 
@@ -152,11 +153,11 @@ contains
         end if
 
         ! Merge ETG/ITG/TEM modes together
-        call merge_modes(net_result, merged_net_result, verbosity)
+        call merge_modes(net_result, qlknn_out, verbosity)
         if (verbosity >= 1) then
             WRITE(*,*) 'rotdiv modes merged'
             do rho = 1, n_rho
-                WRITE(*,'(7(F7.2 X))'), (merged_net_result(rho, ii), ii=1,7)
+                WRITE(*,'(7(F7.2 X))'), (qlknn_out(rho, ii), ii=1,7)
             end do
         end if
 
