@@ -47,23 +47,32 @@ module qlknn_disk_io
     type(networktype), dimension(20), save :: nets
     type(networktype), dimension(19), save :: rotdiv_nets
 contains
-    subroutine load_all_nets_from_disk(folder)
+    subroutine load_all_nets_from_disk(folder, verbosityin)
         character(len=*), intent(in) :: folder
+        integer, optional, intent(in) :: verbosityin
         character(len=32) :: net_name
         character(len=4096) :: filepath
         type(networktype) :: net
         integer :: ii, row
+        integer :: verbosity
+
+        if(present(verbosityin)) then
+            verbosity=verbosityin
+        else
+            verbosity = 0
+        end if
+
         do ii = 1,20
             net_name = net_names(ii)
             filepath = folder // '/' // trim(net_name) // '.nml'
-            write(*,*) 'Loading ', trim(filepath)
+            if (verbosity >= 1) write(*,*) 'Loading ', trim(filepath)
             call load_net_from_disk(filepath, nets(ii))
             net = nets(ii)
         end do
         do ii = 1,18
             net_name = rotdiv_names(ii)
             filepath = folder // '/' // trim(net_name) // '.nml'
-            write(*,*) 'Loading ', trim(filepath)
+            if (verbosity >= 1) write(*,*) 'Loading ', trim(filepath)
             call load_net_from_disk(filepath, rotdiv_nets(ii+1))
         end do
 

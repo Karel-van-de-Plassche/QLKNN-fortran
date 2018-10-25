@@ -12,15 +12,15 @@ module qlknn_primitives
     integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
     integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
 contains
-    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosity)
+    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosityin)
         real, dimension(:,:), intent(in) :: input
         real, dimension(:,:), allocatable :: input_clipped
-        integer, intent(in) :: verbosity
+        integer, optional, intent(in) :: verbosityin
         type(networktype), dimension(20), intent(in) :: nets
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
         real, dimension(:,:), allocatable, intent(out) :: qlknn_out
 
-        integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx
+        integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx, verbosity
         real, dimension(:), allocatable :: res, x, y
         real, dimension(:,:), allocatable :: net_result, rotdiv_result
         real, dimension(:), allocatable :: gam_leq
@@ -33,6 +33,12 @@ contains
         ! zeff ati  ate   an         q      smag         x  ti_te logNustar
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
+        if(present(verbosityin)) then
+            verbosity=verbosityin
+        else
+            verbosity = 0
+        end if
+
         n_nets = 20
         n_rotdiv = 19
 
