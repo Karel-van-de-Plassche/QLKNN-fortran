@@ -20,7 +20,7 @@ contains
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
         real, dimension(:,:), intent(out) :: qlknn_out
 
-        integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx, verbosity
+        integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx, verbosity, job
         real, dimension(:), allocatable :: res, x, y
         real, dimension(:,:), allocatable :: net_result, rotdiv_result
         real, dimension(:), allocatable :: gam_leq
@@ -30,6 +30,10 @@ contains
         logical, dimension(20) :: net_evaluate
         logical, dimension(19) :: rotdiv_evaluate
         character(len=100) :: fmt_tmp
+        integer, dimension(20) :: potential_net_joblist = (/(ii, ii=1,20)/)
+        integer, dimension(19) :: potential_rotdiv_joblist = (/(ii, ii=1,19)/)
+        integer, dimension(:), allocatable :: joblist
+
         ! zeff ati  ate   an         q      smag         x  ti_te logNustar
         !1.0   2.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
         !1.0  13.000000  5.0  2.0  0.660156  0.399902  0.449951    1.0      0.001
@@ -91,18 +95,25 @@ contains
             write(*,*) rotdiv_input(:,1)
         end if
         call get_networks_to_evaluate(opts, net_evaluate, rotdiv_evaluate)
+        allocate(joblist(COUNT(net_evaluate) + COUNT(rotdiv_evaluate)))
+        joblist(1:COUNT(net_evaluate)) = PACK(potential_net_joblist, net_evaluate)
+        joblist(COUNT(net_evaluate)+1:) = PACK(potential_rotdiv_joblist, rotdiv_evaluate) + n_nets - 1
         net_result = 0.
         rotdiv_result = 0.
 
         ! Evaluate all neural networks
-        do ii =1,n_nets
-            if (net_evaluate(ii)) then
-                call evaluate_network(net_input, nets(ii), net_result(:, ii), verbosity)
-            end if
-        end do
-        do ii =2,n_rotdiv
-            if (rotdiv_evaluate(ii)) then
-                call evaluate_network(rotdiv_input, rotdiv_nets(ii), rotdiv_result(:, ii), verbosity)
+        do ii =1,size(joblist)
+            job = joblist(ii)
+            if (job <= n_nets) then
+                idx = job
+                if (net_evaluate(idx)) then
+                    call evaluate_network(net_input, nets(idx), net_result(:, idx), verbosity)
+                end if
+            else
+                idx = job - n_rotdiv
+                if (rotdiv_evaluate(idx)) then
+                    call evaluate_network(rotdiv_input, rotdiv_nets(idx), rotdiv_result(:, idx), verbosity)
+                end if
             end if
         end do
         ! Use the efi rotdiv for efe
