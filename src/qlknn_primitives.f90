@@ -62,11 +62,11 @@ contains
 #endif
         end if
 
-        if (.NOT. (7 == size(qlknn_out, 2))) then
+        if (.NOT. (9 == size(qlknn_out, 2))) then
 #ifdef __PGI
-            STOP 'Columns of qlknn_out should be equal to 7'
+            STOP 'Columns of qlknn_out should be equal to 9'
 #else
-            ERROR STOP 'Columns of qlknn_out should be equal to 7'
+            ERROR STOP 'Columns of qlknn_out should be equal to 9'
 #endif
         end if
 
@@ -189,7 +189,7 @@ contains
         if (verbosity >= 1) then
             WRITE(*,*) 'rotdiv modes merged'
             do rho = 1, n_rho
-                WRITE(*,'(7(F7.2 X))'), (qlknn_out(rho, ii), ii=1,7)
+                WRITE(*,'(9(F7.2 X))'), (qlknn_out(rho, ii), ii=1,9)
             end do
         end if
 
@@ -467,16 +467,20 @@ contains
         !'pfe_GB' % 3
         !'dfe_GB' % 4
         !'vte_GB' % 5
-        !'dfi_GB' % 6
-        !'vti_GB' % 7
+        !'vce_GB' % 6
+        !'dfi_GB' % 7
+        !'vti_GB' % 8
+        !'vci_GB' % 9
         do ii = 1, n_rho
             merged_net_result(ii, 1) = sum(net_result(ii, 1:3))
             merged_net_result(ii, 2) = sum(net_result(ii, 4:5))
             merged_net_result(ii, 3) = sum(net_result(ii, 6:7))
             merged_net_result(ii, 4) = sum(net_result(ii, 8:9))
-            merged_net_result(ii, 5) = sum(net_result(ii, 10:13))
-            merged_net_result(ii, 6) = sum(net_result(ii, 14:15))
-            merged_net_result(ii, 7) = sum(net_result(ii, 16:19))
+            merged_net_result(ii, 5) = sum(net_result(ii, 10:11))
+            merged_net_result(ii, 6) = sum(net_result(ii, 12:13))
+            merged_net_result(ii, 7) = sum(net_result(ii, 14:15))
+            merged_net_result(ii, 8) = sum(net_result(ii, 16:17))
+            merged_net_result(ii, 9) = sum(net_result(ii, 18:19))
         end do
     end subroutine merge_modes
 
