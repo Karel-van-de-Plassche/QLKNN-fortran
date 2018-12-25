@@ -12,12 +12,14 @@ module qlknn_primitives
     integer, dimension(8), parameter :: idx_TEM = (/5, 7, 9, 11, 13, 15, 17, 19/)
     integer, parameter :: leading_ITG = 4, leading_TEM = 3, leading_ETG = 1
 contains
-    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosityin)
+    subroutine evaluate_QLKNN_10D(input, nets, rotdiv_nets, qlknn_out, verbosityin, optsin)
         real, dimension(:,:), intent(in) :: input
         real, dimension(:,:), allocatable :: input_clipped
         integer, optional, intent(in) :: verbosityin
         type(networktype), dimension(20), intent(in) :: nets
         type(networktype), dimension(19), intent(in) :: rotdiv_nets
+        type (qlknn_options), optional, intent(in) :: optsin
+        
         real, dimension(:,:), intent(out) :: qlknn_out
 
         integer trial, n_rho, ii, jj, rho, n_nets, n_rotdiv, idx, verbosity, job
@@ -73,7 +75,14 @@ contains
         if (verbosity >= 2) then
             write(*,*) net_evaluate, rotdiv_evaluate
         end if
-        CALL default_qlknn_options(opts)
+
+        ! set options according to optsin if present from calling program. Otherwise set default
+        if(present(optsin)) then
+            opts=optsin
+        else
+           CALL default_qlknn_options(opts)
+        end if
+
         if (verbosity >= 1) then
             call print_qlknn_options(opts)
             write(*,*) 'input, n_rho=', n_rho
