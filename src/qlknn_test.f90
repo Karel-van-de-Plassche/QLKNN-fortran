@@ -15,7 +15,7 @@ program qlknn_test
     n_trails = 1
     verbosity = 0
 #ifdef __PGI
-    call load_all_nets_from_disk('/common/EFDA-TFJETALL/QLKNN_networks', verbosity)
+    call load_all_nets_from_disk('/u/sim/QLKNN_networks', verbosity)
 #else
     call load_all_nets_from_disk('.', verbosity)
 #endif
