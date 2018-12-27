@@ -64,11 +64,11 @@ contains
 #endif
         end if
 
-        if (.NOT. (9 == size(qlknn_out, 2))) then
+        if (.NOT. (10 == size(qlknn_out, 2))) then
 #ifdef __PGI
-            STOP 'Columns of qlknn_out should be equal to 9'
+            STOP 'Columns of qlknn_out should be equal to 10'
 #else
-            ERROR STOP 'Columns of qlknn_out should be equal to 9'
+            ERROR STOP 'Columns of qlknn_out should be equal to 10'
 #endif
         end if
 
@@ -198,7 +198,7 @@ contains
         if (verbosity >= 1) then
             WRITE(*,*) 'rotdiv modes merged'
             do rho = 1, n_rho
-                WRITE(*,'(9(F7.2 X))'), (qlknn_out(rho, ii), ii=1,9)
+                WRITE(*,'(10(F7.2 X))'), (qlknn_out(rho, ii), ii=1,10)
             end do
         end if
 
@@ -471,25 +471,27 @@ contains
         real, dimension(:,:), intent(out) :: merged_net_result
         integer :: n_rho, ii
         n_rho = size(net_result, 1)
-        !'efe_GB' % 1
-        !'efi_GB' % 2
-        !'pfe_GB' % 3
-        !'dfe_GB' % 4
-        !'vte_GB' % 5
-        !'vce_GB' % 6
-        !'dfi_GB' % 7
-        !'vti_GB' % 8
-        !'vci_GB' % 9
+        !'efe_GB'    % 1
+        !'efeETG_GB' % 2
+        !'efi_GB'    % 3
+        !'pfe_GB'    % 4
+        !'dfe_GB'    % 5
+        !'vte_GB'    % 6
+        !'vce_GB'    % 7
+        !'dfi_GB'    % 8
+        !'vti_GB'    % 9
+        !'vci_GB'    % 10
         do ii = 1, n_rho
             merged_net_result(ii, 1) = sum(net_result(ii, 1:3))
-            merged_net_result(ii, 2) = sum(net_result(ii, 4:5))
-            merged_net_result(ii, 3) = sum(net_result(ii, 6:7))
-            merged_net_result(ii, 4) = sum(net_result(ii, 8:9))
-            merged_net_result(ii, 5) = sum(net_result(ii, 10:11))
-            merged_net_result(ii, 6) = sum(net_result(ii, 12:13))
-            merged_net_result(ii, 7) = sum(net_result(ii, 14:15))
-            merged_net_result(ii, 8) = sum(net_result(ii, 16:17))
-            merged_net_result(ii, 9) = sum(net_result(ii, 18:19))
+            merged_net_result(ii, 2) = net_result(ii, 1)
+            merged_net_result(ii, 3) = sum(net_result(ii, 4:5))
+            merged_net_result(ii, 4) = sum(net_result(ii, 6:7))
+            merged_net_result(ii, 5) = sum(net_result(ii, 8:9))
+            merged_net_result(ii, 6) = sum(net_result(ii, 10:11))
+            merged_net_result(ii, 7) = sum(net_result(ii, 12:13))
+            merged_net_result(ii, 8) = sum(net_result(ii, 14:15))
+            merged_net_result(ii, 9) = sum(net_result(ii, 16:17))
+            merged_net_result(ii, 10) = sum(net_result(ii, 18:19))
         end do
     end subroutine merge_modes
 
